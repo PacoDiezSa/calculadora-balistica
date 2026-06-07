@@ -1,18 +1,18 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modelo Balístico Correcto</title>
+<title>Modelo Balístico Avanzado</title>
+
 <style>
 body{
     font-family: Arial, sans-serif;
-    margin:0;
-    padding:20px;
     background:#f4f4f4;
+    padding:20px;
 }
 .container{
-    max-width:900px;
+    max-width:1000px;
     margin:auto;
     background:white;
     padding:20px;
@@ -21,24 +21,25 @@ body{
 }
 input{
     width:100%;
-    padding:6px;
-    margin-bottom:10px;
+    padding:8px;
+    margin-bottom:12px;
 }
 button{
-    padding:10px;
+    padding:12px;
     width:100%;
     background:#0066cc;
     color:white;
     border:none;
-    border-radius:5px;
+    border-radius:6px;
     font-size:16px;
+    cursor:pointer;
 }
 table{
     width:100%;
     border-collapse:collapse;
     margin-top:20px;
 }
-td, th{
+th, td{
     border:1px solid #ddd;
     padding:6px;
     text-align:center;
@@ -46,14 +47,30 @@ td, th{
 th{
     background:#eee;
 }
+.result{
+    margin-top:20px;
+    padding:15px;
+    background:#eef;
+    border-radius:6px;
+}
 </style>
 </head>
+
 <body>
 <div class="container">
-<h2>Modelo Balístico Integrado Correctamente</h2>
 
-<label>BC (G1 aproximado)</label>
+<label><b>Cartucho:</b></label>
+<input type="text" id="cartucho" 
+value="Winchester Extreme Point 30-06 180gr"
+style="width: 300px; margin-bottom:10px;">
+<h2>Modelo Balístico Completo</h2>
+<h3 id="tituloCartucho" style="margin-top:20px; color:#2c3e50;"></h3><table id="tabla">
+
+<label>BC (G1)</label>
 <input id="bc" type="number" step="0.001" value="0.422">
+
+<label>Factor de calibración:</label>
+<input type="number" id="factorDrag" value="3000">
 
 <label>Velocidad inicial (m/s)</label>
 <input id="v0" type="number" value="838">
@@ -61,44 +78,93 @@ th{
 <label>Altitud (m)</label>
 <input id="alt" type="number" value="1000">
 
-<label>Cero (m)</label>
-<input id="zero" type="number" value="200">
+<label>Zona vital ± (cm)</label>
+<input id="zona" type="number" value="4">
 
-<label>Distancia máxima (m)</label>
-<input id="distMax" type="number" value="300">
+<label>Viento lateral (m/s)</label>
+<input id="viento" type="number" value="4">
+
+<label>Sistema de torreta</label>
+<select id="sistema">
+    <option value="mrad">MRAD</option>
+    <option value="moa">MOA</option>
+</select>
+
+<label>Valor por click</label>
+<input id="valorClick" type="number" step="0.01" value="0.1">
+
+<label>Peso del proyectil (grains)</label>
+<input id="peso" type="number" value="180">
+
+<label>Segundo cero deseado (m)</label>
+<input id="ceroDeseado" type="number" value="200">
 
 <button onclick="calcular()">Calcular</button>
+<div class="result" id="resultado">
+<hr style="margin-top:40px;">
 
-<table id="tabla">
+<div style="
+    text-align:right;
+    font-size:12px;
+    color:#777;
+">
+    © 2026 F. Díez – Calculadora Balística Personal
+</div>
+</div>
 <thead>
 <tr>
-<th>Distancia (m)</th>
-<th>Velocidad (m/s)</th>
-<th>Trayectoria (cm)</th>
+<th>Dist (m)</th>
+<th>Vel (m/s)</th>
+<th>Energía (J)</th>
+<th>Tray (cm)</th>
+<th>Viento (cm)</th>
+<th>Clicks ↑ (0.1 mrad)</th>
+<th>Clicks → (0.1 mrad)</th>
 </tr>
 </thead>
 <tbody></tbody>
 </table>
+<canvas id="grafica" width="900" height="400" style="margin-top:30px;border:1px solid #ccc;"></canvas>
+
 </div>
 
 <script>
+
 function densidadAire(alt){
     const rho0 = 1.225;
     return rho0 * Math.exp(-alt/8500);
 }
 
 function calcular(){
+    const nombreCartucho = document.getElementById("cartucho").value;
 
     const bc = parseFloat(document.getElementById("bc").value);
     const v0 = parseFloat(document.getElementById("v0").value);
     const alt = parseFloat(document.getElementById("alt").value);
-    const zeroDist = parseFloat(document.getElementById("zero").value);
-    const distMax = parseFloat(document.getElementById("distMax").value);
+    const zona = parseFloat(document.getElementById("zona").value) / 100;
+    const viento = parseFloat(document.getElementById("viento").value);
+    const sistema = document.getElementById("sistema").value;
+    const valorClick = parseFloat(document.getElementById("valorClick").value);
+
+    const pesoGrains = parseFloat(document.getElementById("peso").value);
+    const masa = pesoGrains * 0.00006479891;
 
     const rho = densidadAire(alt);
     const g = 9.81;
-    const visorAltura = 0.038; // 3.8 cm
+    const visorAltura = 0.038;
     const dt = 0.0005;
+    const factorDrag = parseFloat(document.getElementById("factorDrag").value);
+
+    document.getElementById("tituloCartucho").innerHTML =
+    "Tabla balística – " + nombreCartucho;
+    document.getElementById("tituloCartucho").innerHTML =
+    "Tabla balística – <b>" + nombreCartucho + "</b>" +
+    "<br><span style='font-size:14px; color:#555;'>"
+    + "BC (G1): " + bc +
+    " | V0: " + v0 +
+    " m/s | Factor: " + factorDrag +
+    "</span>";
+
 
     function simular(theta){
 
@@ -108,13 +174,14 @@ function calcular(){
         let vx = v0 * Math.cos(theta);
         let vy = v0 * Math.sin(theta);
 
-        let tray = [];
+        let tiempo = 0;
+        let datos = [];
 
-        while(x <= distMax && y > -10){
+        while(x <= 500 && y > -2){
 
             let v = Math.sqrt(vx*vx + vy*vy);
-
-            let drag = (rho * v * v) / (bc * 8000);
+            const factorDrag = parseFloat(document.getElementById("factorDrag").value);
+	    let drag = (rho * v * v) / (bc * factorDrag);
 
             let ax = -drag * (vx/v);
             let ay = -g - drag * (vy/v);
@@ -125,38 +192,262 @@ function calcular(){
             x += vx * dt;
             y += vy * dt;
 
-            tray.push({x:x, y:y, v:v});
+            tiempo += dt;
+
+            datos.push({ x, y, v, t: tiempo });
         }
 
-        return tray;
+        return datos;
     }
 
-    // Ajuste automático del ángulo para el cero deseado
-    let theta = 0.01;
-    for(let i=0;i<15;i++){
+    // --- Ajuste del segundo cero ---
+    let ceroDeseado = parseFloat(document.getElementById("ceroDeseado").value);
+
+    let thetaMin = 0.0;
+    let thetaMax = 0.05;
+    let theta;
+
+    for(let i=0; i<40; i++){
+
+        theta = (thetaMin + thetaMax) / 2;
         let tray = simular(theta);
-        let punto = tray.find(p => p.x >= zeroDist);
-        if(!punto) break;
-        theta -= punto.y / zeroDist;
+
+        let idx = tray.findIndex(p => p.x >= ceroDeseado);
+        if(idx <= 0) continue;
+
+        let p1 = tray[idx-1];
+        let p2 = tray[idx];
+
+        let factor = (ceroDeseado - p1.x)/(p2.x - p1.x);
+        let yInterp = p1.y + factor*(p2.y - p1.y);
+
+        if(yInterp > 0) thetaMax = theta;
+        else thetaMin = theta;
     }
 
     let trayFinal = simular(theta);
 
+    // --- Cálculo de cruces ---
+    let primerCruce = null;
+    let segundoCruce = null;
+    let mpbr = null;
+
+    for(let i=1;i<trayFinal.length;i++){
+
+        let prev = trayFinal[i-1];
+        let curr = trayFinal[i];
+
+        if(prev.y < 0 && curr.y >= 0 && primerCruce === null){
+            let f = -prev.y/(curr.y - prev.y);
+            primerCruce = prev.x + f*(curr.x - prev.x);
+        }
+
+        if(prev.y > 0 && curr.y <= 0 && segundoCruce === null){
+            let f = prev.y/(prev.y - curr.y);
+            segundoCruce = prev.x + f*(curr.x - prev.x);
+        }
+
+        if(prev.y > -zona && curr.y <= -zona && mpbr === null){
+            let f = (prev.y + zona)/(prev.y - curr.y);
+            mpbr = prev.x + f*(curr.x - prev.x);
+        }
+    }
+
+    document.getElementById("resultado").innerHTML =
+        "<b>Cero configurado:</b> " + ceroDeseado.toFixed(0) + " m<br>" +
+        "<b>Primer cero:</b> " + (primerCruce ? primerCruce.toFixed(0) : "-") + " m<br>" +
+        "<b>Segundo cero real:</b> " + (segundoCruce ? segundoCruce.toFixed(0) : "-") + " m<br>" +
+        "<b>MPBR (±" + (zona*100) + " cm):</b> " + (mpbr ? mpbr.toFixed(0) : "-") + " m";
+
+    // --- TABLA ---
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
 
-    for(let d=0; d<=distMax; d+=25){
-        let punto = trayFinal.find(p => p.x >= d);
-        if(punto){
-            tbody.innerHTML += `
-                <tr>
-                    <td>${d}</td>
-                    <td>${punto.v.toFixed(0)}</td>
-                    <td>${(punto.y*100).toFixed(1)}</td>
-                </tr>`;
+    for(let d=0; d<=300; d+=25){
+
+        let punto;
+
+        if(d === 0){
+            punto = trayFinal[0];
+        } else {
+
+            let idx = trayFinal.findIndex(p => p.x >= d);
+            if(idx <= 0) continue;
+
+            let p1 = trayFinal[idx-1];
+            let p2 = trayFinal[idx];
+
+            let f = (d - p1.x)/(p2.x - p1.x);
+
+            punto = {
+                x: d,
+                y: p1.y + f*(p2.y - p1.y),
+                v: p1.v + f*(p2.v - p1.v),
+                t: p1.t + f*(p2.t - p1.t)
+            };
         }
+
+        let deriva_cm = viento * punto.t * 100;
+        let caida_cm = punto.y * 100;
+        let energia = 0.5 * masa * punto.v * punto.v;
+
+        let clicksVertical = "-";
+        let clicksHorizontal = "-";
+
+        if(d !== 0){
+
+            let anguloVertical, anguloHorizontal;
+
+            if(sistema === "mrad"){
+                anguloVertical = -caida_cm / (d * 0.1);
+                anguloHorizontal = deriva_cm / (d * 0.1);
+            } else { // MOA
+                anguloVertical = (-caida_cm / (d * 0.0291));
+                anguloHorizontal = (deriva_cm / (d * 0.0291));
+            }
+
+            clicksVertical = (anguloVertical / valorClick).toFixed(1);
+            clicksHorizontal = (anguloHorizontal / valorClick).toFixed(1);
+        }
+
+        tbody.innerHTML += `
+        <tr>
+            <td>${d}</td>
+            <td>${punto.v.toFixed(0)}</td>
+            <td>${energia.toFixed(0)}</td>
+            <td>${Math.round(caida_cm)}</td>
+            <td>${Math.round(deriva_cm)}</td>
+            <td>${clicksVertical}</td>
+            <td>${clicksHorizontal}</td>
+        </tr>`;
     }
+
+    dibujarGrafica(trayFinal, zona);
 }
+
+function dibujarGrafica(trayectoria, zona){
+
+    const canvas = document.getElementById("grafica");
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const margen = 50;
+    const ancho = canvas.width - margen*2;
+    const alto = canvas.height - margen*2;
+
+    const maxDist = 300;
+
+    // Autoescala vertical según trayectoria real
+    let ys = trayectoria
+        .filter(p=>p.x<=maxDist)
+        .map(p=>p.y);
+
+    const maxAltura = Math.max(...ys) + 0.02;
+    const minAltura = Math.min(...ys) - 0.02;
+
+    function escalaX(x){
+        return margen + (x/maxDist)*ancho;
+    }
+
+    function escalaY(y){
+        return margen + alto - ((y-minAltura)/(maxAltura-minAltura))*alto;
+    }
+
+    // --- CUADRÍCULA ---
+    ctx.strokeStyle="#eee";
+    ctx.lineWidth=1;
+
+    for(let d=0; d<=maxDist; d+=50){
+        ctx.beginPath();
+        ctx.moveTo(escalaX(d), margen);
+        ctx.lineTo(escalaX(d), margen+alto);
+        ctx.stroke();
+    }
+
+    for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
+        ctx.beginPath();
+        ctx.moveTo(margen, escalaY(h/100));
+        ctx.lineTo(margen+ancho, escalaY(h/100));
+        ctx.stroke();
+    }
+
+    // --- ZONA VITAL (banda suave) ---
+    ctx.fillStyle="rgba(0,150,0,0.08)";
+    ctx.fillRect(
+        margen,
+        escalaY(zona),
+        ancho,
+        escalaY(-zona)-escalaY(zona)
+    );
+
+    // --- LÍNEA DE MIRA ---
+    ctx.strokeStyle="#444";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(escalaX(0), escalaY(0));
+    ctx.lineTo(escalaX(maxDist), escalaY(0));
+    ctx.stroke();
+
+    // --- TRAYECTORIA ---
+    ctx.strokeStyle="#e74c3c";
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+
+    let primero=true;
+
+    trayectoria.forEach(p=>{
+        if(p.x<=maxDist){
+            if(primero){
+                ctx.moveTo(escalaX(p.x), escalaY(p.y));
+                primero=false;
+            } else {
+                ctx.lineTo(escalaX(p.x), escalaY(p.y));
+            }
+        }
+    });
+
+    ctx.stroke();
+
+    // --- EJES ---
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=1.5;
+
+    // eje vertical
+    ctx.beginPath();
+    ctx.moveTo(margen, margen);
+    ctx.lineTo(margen, margen+alto);
+    ctx.stroke();
+
+    // eje horizontal inferior
+    ctx.beginPath();
+    ctx.moveTo(margen, margen+alto);
+    ctx.lineTo(margen+ancho, margen+alto);
+    ctx.stroke();
+
+    // --- ETIQUETAS DISTANCIA ---
+    ctx.fillStyle="#000";
+    ctx.font="12px Arial";
+
+    for(let d=0; d<=maxDist; d+=50){
+        ctx.fillText(d+" m", escalaX(d)-15, margen+alto+20);
+    }
+
+    // --- ETIQUETAS ALTURA ---
+    for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
+        ctx.fillText(h+" cm", margen-40, escalaY(h/100)+4);
+    }
+
+    // --- TÍTULO ---
+    ctx.font="bold 14px Arial";
+    ctx.fillText("Trayectoria balística", margen, 25);
+}
+
 </script>
+<hr style="margin-top:40px;">
+
+<div style="text-align:right; font-size:12px; color:#777;">
+    © 2026 Fco. Díez – Calculadora Balística Personal 
+</div>
 </body>
 </html>
