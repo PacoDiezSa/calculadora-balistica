@@ -1,0 +1,162 @@
+<<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modelo Balístico Correcto</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:20px;
+    background:#f4f4f4;
+}
+.container{
+    max-width:900px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+input{
+    width:100%;
+    padding:6px;
+    margin-bottom:10px;
+}
+button{
+    padding:10px;
+    width:100%;
+    background:#0066cc;
+    color:white;
+    border:none;
+    border-radius:5px;
+    font-size:16px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+td, th{
+    border:1px solid #ddd;
+    padding:6px;
+    text-align:center;
+}
+th{
+    background:#eee;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>Modelo Balístico Integrado Correctamente</h2>
+
+<label>BC (G1 aproximado)</label>
+<input id="bc" type="number" step="0.001" value="0.422">
+
+<label>Velocidad inicial (m/s)</label>
+<input id="v0" type="number" value="838">
+
+<label>Altitud (m)</label>
+<input id="alt" type="number" value="1000">
+
+<label>Cero (m)</label>
+<input id="zero" type="number" value="200">
+
+<label>Distancia máxima (m)</label>
+<input id="distMax" type="number" value="300">
+
+<button onclick="calcular()">Calcular</button>
+
+<table id="tabla">
+<thead>
+<tr>
+<th>Distancia (m)</th>
+<th>Velocidad (m/s)</th>
+<th>Trayectoria (cm)</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+<script>
+function densidadAire(alt){
+    const rho0 = 1.225;
+    return rho0 * Math.exp(-alt/8500);
+}
+
+function calcular(){
+
+    const bc = parseFloat(document.getElementById("bc").value);
+    const v0 = parseFloat(document.getElementById("v0").value);
+    const alt = parseFloat(document.getElementById("alt").value);
+    const zeroDist = parseFloat(document.getElementById("zero").value);
+    const distMax = parseFloat(document.getElementById("distMax").value);
+
+    const rho = densidadAire(alt);
+    const g = 9.81;
+    const visorAltura = 0.038; // 3.8 cm
+    const dt = 0.0005;
+
+    function simular(theta){
+
+        let x = 0;
+        let y = -visorAltura;
+
+        let vx = v0 * Math.cos(theta);
+        let vy = v0 * Math.sin(theta);
+
+        let tray = [];
+
+        while(x <= distMax && y > -10){
+
+            let v = Math.sqrt(vx*vx + vy*vy);
+
+            let drag = (rho * v * v) / (bc * 8000);
+
+            let ax = -drag * (vx/v);
+            let ay = -g - drag * (vy/v);
+
+            vx += ax * dt;
+            vy += ay * dt;
+
+            x += vx * dt;
+            y += vy * dt;
+
+            tray.push({x:x, y:y, v:v});
+        }
+
+        return tray;
+    }
+
+    // Ajuste automático del ángulo para el cero deseado
+    let theta = 0.01;
+    for(let i=0;i<15;i++){
+        let tray = simular(theta);
+        let punto = tray.find(p => p.x >= zeroDist);
+        if(!punto) break;
+        theta -= punto.y / zeroDist;
+    }
+
+    let trayFinal = simular(theta);
+
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = "";
+
+    for(let d=0; d<=distMax; d+=25){
+        let punto = trayFinal.find(p => p.x >= d);
+        if(punto){
+            tbody.innerHTML += `
+                <tr>
+                    <td>${d}</td>
+                    <td>${punto.v.toFixed(0)}</td>
+                    <td>${(punto.y*100).toFixed(1)}</td>
+                </tr>`;
+        }
+    }
+}
+</script>
+</body>
+</html>
