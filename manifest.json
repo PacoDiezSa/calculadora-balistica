@@ -1,10 +1,11 @@
 {
-  "name": "Calculadora Balística",
-  "short_name": "Balística",
-  "start_url": ".",
+  "name": "Calculadora Balística - Modelo Balístico Avanzado",
+  "short_name": "Calculadora Balística",
+  "description": "Calculadora balística avanzada para cálculo de trayectoria, viento y correcciones en MRAD.",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#f4f4f4",
-  "theme_color": "#2c3e50",
+  "background_color": "#111111",
+  "theme_color": "#111111",
   "orientation": "portrait",
   "icons": [
     {
