@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modelo Balístico Avanzado</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2c3e50">
+
 <style>
 body{
     font-family: Arial, sans-serif;
@@ -85,6 +84,15 @@ style="width: 300px; margin-bottom:10px;">
 <label>Viento lateral (m/s)</label>
 <input id="viento" type="number" value="4">
 
+<label>Velocidad del animal (m/s)</label>
+<input id="velAnimal" type="number" value="8">
+
+<label>Pendiente terreno (°)</label>
+<input id="pendiente" type="number" value="0">
+
+<label>Ángulo animal (°)</label>
+<input id="anguloAnimal" type="number" value="0">
+
 <label>Sistema de torreta</label>
 <select id="sistema">
     <option value="mrad">MRAD</option>
@@ -100,6 +108,10 @@ style="width: 300px; margin-bottom:10px;">
 <label>Segundo cero deseado (m)</label>
 <input id="ceroDeseado" type="number" value="200">
 
+<!-- <label>Aumento visor (x)</label>
+<input type="range" id="zoom" min="1" max="12" step="1" value="6">
+<span id="zoomValor">6x</span> -->
+
 <button onclick="calcular()">Calcular</button>
 <div class="result" id="resultado">
 <hr style="margin-top:40px;">
@@ -114,18 +126,60 @@ style="width: 300px; margin-bottom:10px;">
 </div>
 <thead>
 <tr>
-<th>Dist (m)</th>
+<th>Dist. hor (m)</th>
+<th>Dist. geométrica (m)</th>
 <th>Vel (m/s)</th>
 <th>Energía (J)</th>
 <th>Tray (cm)</th>
 <th>Viento (cm)</th>
+<th>Adelanto (cm)</th>
+<th>Dist. efectiva (m)</th>
+<th>Tiempo (s)</th>
 <th>Clicks ↑ (0.1 mrad)</th>
 <th>Clicks → (0.1 mrad)</th>
 </tr>
 </thead>
 <tbody></tbody>
 </table>
-<canvas id="grafica" width="900" height="400" style="margin-top:30px;border:1px solid #ccc;"></canvas>
+<canvas id="simulacion" width="900" height="400"></canvas>
+
+<label>Aumento visor (x)</label>
+<input type="range" id="zoom" min="1" max="12" step="1" value="6">
+<span id="zoomValor">6x</span>
+
+<button onclick="disparar()" style="margin-top:10px;">
+    Disparar
+</button>
+
+<div id="panelImpacto" class="panel-impacto">
+    <h3>Datos del disparo</h3>
+    <div id="datosImpacto">Sin disparo</div>
+</div>
+
+<canvas id="grafica" width="900" height="400" style="margin-top:30px;border:1px solid #ccc;"></canvas> 
+
+<canvas id="simulacion" width="900" height="400"></canvas>
+
+<div style="margin:20px 0; text-align:center;">
+    <label><strong>Aumento visor (x)</strong></label><br>
+
+    <input type="range"
+           id="zoom"
+           min="1"
+           max="12"
+           step="1"
+           value="6"
+           style="width:300px;"
+           >
+
+    <span id="zoomValor">6x</span>
+</div>
+
+<canvas id="grafica"
+        width="900"
+        height="400"
+        style="margin-top:10px;border:1px solid #ccc;">
+</canvas>
 
 </div>
 
@@ -134,6 +188,129 @@ style="width: 300px; margin-bottom:10px;">
 function densidadAire(alt){
     const rho0 = 1.225;
     return rho0 * Math.exp(-alt/8500);
+}
+
+// ✅ VARIABLES GLOBALES (AQUÍ ARRIBA
+let trayGlobal = null;
+let betaGlobal = null;
+let velAnimalGlobal = null;
+let radGlobal = null;
+let ultimaSimulacion = null;
+let ultimaFila = null;
+let impactoX = null;
+let impactoY = null;
+let hierba = [];
+let vientoOffset = 0;
+let mostrarImpacto = false;
+
+const fondo = new Image();
+const jabali = new Image();
+
+
+const zoomSlider = document.getElementById("zoom");
+const zoomValor = document.getElementById("zoomValor");
+
+zoomSlider.addEventListener("input", function () {
+
+    zoomValor.textContent = this.value + "x";
+
+    if (ultimaSimulacion) {
+        dibujarEscenaBalistica(ultimaSimulacion);
+    }
+});
+
+let imagenesListas = false;
+
+function comprobarCarga() {
+    if (fondo.complete && jabali.complete) {
+        imagenesListas = true;
+        //console.log("✅ Imágenes listas");
+    }
+}
+
+fondo.onload = comprobarCarga;
+jabali.onload = comprobarCarga;
+
+fondo.src = "img/fondo.png";
+jabali.src = "img/jabali.png";
+
+function tiempoHastaDistancia(d, tray) {
+
+    for (let i = 1; i < tray.length; i++) {
+
+        let p1 = tray[i-1];
+        let p2 = tray[i];
+
+        if (p2.x >= d) {
+
+            let f = (d - p1.x)/(p2.x - p1.x);
+
+            return p1.t + f*(p2.t - p1.t);
+        }
+    }
+
+    return null; // por seguridad
+}
+
+function tiempoHastaIntercepcion(d, velAnimal, rad, tray) {
+
+    let t = tiempoHastaDistancia(d, tray);
+
+    for (let i = 0; i < 3; i++) {
+
+        let dNueva = d + velAnimal * Math.sin(rad) * t;
+
+        t = tiempoHastaDistancia(dNueva, tray);
+    }
+
+    return t;
+}
+
+function calcularBalistica(dSim){
+
+    if(!trayGlobal) return;
+
+    let idx = trayGlobal.findIndex(p => p.x >= dSim);
+    if(idx <= 0) return;
+
+    let p1 = trayGlobal[idx-1];
+    let p2 = trayGlobal[idx];
+
+    let f = (dSim - p1.x)/(p2.x - p1.x);
+
+    let punto = {
+        x: dSim,
+        y: p1.y + f*(p2.y - p1.y),
+        v: p1.v + f*(p2.v - p1.v),
+        t: p1.t + f*(p2.t - p1.t)
+    };
+
+    let tReal = tiempoHastaIntercepcion(
+        dSim,
+        velAnimalGlobal,
+        radGlobal,
+        trayGlobal
+    );
+
+    let distanciaEfectiva = dSim + velAnimalGlobal * Math.sin(radGlobal) * tReal;
+
+    let alturaTerreno = dSim * Math.tan(betaGlobal);
+    let deltaLong = velAnimalGlobal * Math.sin(radGlobal) * tReal;
+    let deltaAltura = deltaLong * Math.tan(betaGlobal);
+    let alturaAnimal = alturaTerreno + deltaAltura;
+
+    let adelantoCm = deltaLong * 100;
+    let alturaCm = (punto.y - alturaAnimal) * 100;
+
+    const datos = {
+        distancia: dSim,
+        adelantoCm,
+        alturaCm
+    };
+
+    //console.log(datos);
+
+    dibujarEscenaBalistica(datos);
 }
 
 function calcular(){
@@ -146,7 +323,8 @@ function calcular(){
     const viento = parseFloat(document.getElementById("viento").value);
     const sistema = document.getElementById("sistema").value;
     const valorClick = parseFloat(document.getElementById("valorClick").value);
-
+    const pendiente = parseFloat(document.getElementById("pendiente").value);
+    const beta = pendiente * Math.PI / 180;
     const pesoGrains = parseFloat(document.getElementById("peso").value);
     const masa = pesoGrains * 0.00006479891;
 
@@ -182,7 +360,7 @@ function calcular(){
 
             let v = Math.sqrt(vx*vx + vy*vy);
             const factorDrag = parseFloat(document.getElementById("factorDrag").value);
-	    let drag = (rho * v * v) / (bc * factorDrag);
+	        let drag = (rho * v * v) / (bc * factorDrag);
 
             let ax = -drag * (vx/v);
             let ay = -g - drag * (vy/v);
@@ -263,7 +441,9 @@ function calcular(){
     // --- TABLA ---
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
-
+    const velAnimal = parseFloat(document.getElementById("velAnimal").value);
+    const angulo = parseFloat(document.getElementById("anguloAnimal").value);
+    const rad = angulo * Math.PI / 180;
     for(let d=0; d<=300; d+=25){
 
         let punto;
@@ -288,10 +468,20 @@ function calcular(){
             };
         }
 
+        let distanciaGeometrica = Math.abs(Math.cos(beta)) < 0.0001
+        ? "-"
+        : d / Math.cos(beta);
+
         let deriva_cm = viento * punto.t * 100;
         let caida_cm = punto.y * 100;
         let energia = 0.5 * masa * punto.v * punto.v;
-
+        let tReal = tiempoHastaIntercepcion(d, velAnimal, rad, trayFinal);
+	    let distanciaEfectiva = d + velAnimal * Math.sin(rad) * tReal;
+        let adelanto_cm = velAnimal * tReal * Math.cos(rad) * 100;
+        let alturaTerreno = d * Math.tan(beta);
+        let deltaLongitudinal = velAnimal * Math.sin(rad) * tReal;
+        let deltaAltura = deltaLongitudinal * Math.tan(beta);
+        let alturaAnimal = alturaTerreno + deltaAltura;
         let clicksVertical = "-";
         let clicksHorizontal = "-";
 
@@ -311,153 +501,1109 @@ function calcular(){
             clicksHorizontal = (anguloHorizontal / valorClick).toFixed(1);
         }
 
-        tbody.innerHTML += `
-        <tr>
-            <td>${d}</td>
-            <td>${punto.v.toFixed(0)}</td>
-            <td>${energia.toFixed(0)}</td>
-            <td>${Math.round(caida_cm)}</td>
-            <td>${Math.round(deriva_cm)}</td>
-            <td>${clicksVertical}</td>
-            <td>${clicksHorizontal}</td>
-        </tr>`;
-    }
+    tbody.innerHTML += `
+    <tr onclick="simularDistancia(this, {
+        distancia: ${d},
+        alturaCm: ${-Math.round(caida_cm)},
+        adelantoCm: ${Math.round(adelanto_cm)}
+    })" style="cursor:pointer;">
 
+        <td>${d}</td>
+        <td>${distanciaGeometrica.toFixed(2)}</td>
+        <td>${punto.v.toFixed(0)}</td>
+        <td>${energia.toFixed(0)}</td>
+        <td>${Math.round(caida_cm)}</td>
+        <td>${Math.round(deriva_cm)}</td>
+        <td>${Math.round(adelanto_cm)}</td>
+        <td>${distanciaEfectiva.toFixed(2)}</td>
+        <td>${tReal.toFixed(3)}</td>
+        <td>${clicksVertical}</td>
+        <td>${clicksHorizontal}</td>
+
+    </tr>
+    `;        
+        }
+
+// Guardar datos globales para simulación
+    trayGlobal = trayFinal;
+    betaGlobal = beta;
+    velAnimalGlobal = velAnimal;
+    radGlobal = rad;
     dibujarGrafica(trayFinal, zona);
+
 }
 
-function dibujarGrafica(trayectoria, zona){
 
-    const canvas = document.getElementById("grafica");
+    function simularDistancia(fila) {
+
+        if (!fila) return;   // 🔥 protección
+
+        document.querySelectorAll("table tr").forEach(tr => {
+            tr.classList.remove("seleccionada");
+        });
+
+        fila.classList.add("seleccionada");
+        ultimaFila = fila;
+
+        const celdas = fila.querySelectorAll("td");
+
+        const datos = {
+            distancia: parseFloat(celdas[0].innerText),
+            velocidad: parseFloat(celdas[2].innerText),
+            alturaCm: parseFloat(celdas[4].innerText),
+            adelantoCm: parseFloat(celdas[6].innerText),
+            tiempoVuelo: parseFloat(celdas[8].innerText)
+        }; 
+        
+        //console.log("Datos desde tabla:", datos);
+
+        ultimaSimulacion = datos;
+
+        dibujarEscenaBalistica(datos);
+    }
+
+    function dibujarGrafica(trayectoria, zona){
+
+        const canvas = document.getElementById("grafica");
+        const ctx = canvas.getContext("2d");
+
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        const margen = 50;
+        const ancho = canvas.width - margen*2;
+        const alto = canvas.height - margen*2;
+
+        const maxDist = 300;
+
+        // Autoescala vertical según trayectoria real
+        let ys = trayectoria
+            .filter(p=>p.x<=maxDist)
+            .map(p=>p.y);
+
+        const maxAltura = Math.max(...ys) + 0.02;
+        const minAltura = Math.min(...ys) - 0.02;
+
+        function escalaX(x){
+            return margen + (x/maxDist)*ancho;
+        }
+
+        function escalaY(y){
+            return margen + alto - ((y-minAltura)/(maxAltura-minAltura))*alto;
+        }
+
+        // --- CUADRÍCULA ---
+        ctx.strokeStyle="#eee";
+        ctx.lineWidth=1;
+
+        for(let d=0; d<=maxDist; d+=50){
+            ctx.beginPath();
+            ctx.moveTo(escalaX(d), margen);
+            ctx.lineTo(escalaX(d), margen+alto);
+            ctx.stroke();
+        }
+
+        for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
+            ctx.beginPath();
+            ctx.moveTo(margen, escalaY(h/100));
+            ctx.lineTo(margen+ancho, escalaY(h/100));
+            ctx.stroke();
+        }
+
+        // --- ZONA VITAL (banda suave) ---
+        ctx.fillStyle="rgba(0,150,0,0.08)";
+        ctx.fillRect(
+            margen,
+            escalaY(zona),
+            ancho,
+            escalaY(-zona)-escalaY(zona)
+        );
+
+        // --- LÍNEA DE MIRA ---
+        ctx.strokeStyle="#444";
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(escalaX(0), escalaY(0));
+        ctx.lineTo(escalaX(maxDist), escalaY(0));
+        ctx.stroke();
+
+        // --- TRAYECTORIA ---
+        ctx.strokeStyle="#e74c3c";
+        ctx.lineWidth=2.5;
+        ctx.beginPath();
+
+        let primero=true;
+
+        trayectoria.forEach(p=>{
+            if(p.x<=maxDist){
+                if(primero){
+                    ctx.moveTo(escalaX(p.x), escalaY(p.y));
+                    primero=false;
+                } else {
+                    ctx.lineTo(escalaX(p.x), escalaY(p.y));
+                }
+            }
+        });
+
+        ctx.stroke();
+
+        // --- EJES ---
+        ctx.strokeStyle="#000";
+        ctx.lineWidth=1.5;
+
+        // eje vertical
+        ctx.beginPath();
+        ctx.moveTo(margen, margen);
+        ctx.lineTo(margen, margen+alto);
+        ctx.stroke();
+
+        // eje horizontal inferior
+        ctx.beginPath();
+        ctx.moveTo(margen, margen+alto);
+        ctx.lineTo(margen+ancho, margen+alto);
+        ctx.stroke();
+
+        // --- ETIQUETAS DISTANCIA ---
+        ctx.fillStyle="#000";
+        ctx.font="12px Arial";
+
+        for(let d=0; d<=maxDist; d+=50){
+            ctx.fillText(d+" m", escalaX(d)-15, margen+alto+20);
+        }
+
+        // --- ETIQUETAS ALTURA ---
+        for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
+            ctx.fillText(h+" cm", margen-40, escalaY(h/100)+4);
+        }
+
+        // --- TÍTULO ---
+        ctx.font="bold 14px Arial";
+        ctx.fillText("Trayectoria balística", margen, 25);
+
+    }
+
+// function dibujarEscenaBalistica(datos, tiempoFisico = 0) {
+
+//     if (!imagenesListas) return;
+
+//     const canvas = document.getElementById("simulacion");
+//     const ctx = canvas.getContext("2d");
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+//     const centroX = canvas.width / 2;
+//     const centroY = canvas.height / 2;
+
+//     const aumento = parseFloat(document.getElementById("zoom").value);
+//     const zoom = aumento / 6;
+//     const distancia = datos.distancia;
+
+//     const campoVertical1x = 250;
+//     const campoVertical = campoVertical1x / aumento;
+//     const pxPorMrad = canvas.height / campoVertical;
+
+//     function cmToPixel(cm) {
+//         const anguloMrad = (cm / (distancia * 100)) * 1000;
+//         return anguloMrad * pxPorMrad;
+//     }
+
+//     const radio = canvas.height * 0.38;
+
+//     ctx.save();
+
+//     // ==============================
+//     // CLIP DEL VISOR
+//     // ==============================
+
+//     ctx.beginPath();
+//     ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+//     ctx.clip();
+
+//     // ==============================
+//     // ZOOM DEL MUNDO COMPLETO
+//     // ==============================
+
+//     ctx.save();
+//     ctx.translate(centroX, centroY);
+//     ctx.scale(zoom, zoom);
+//     ctx.translate(-centroX, -centroY);
+
+// // ==============================
+// // FONDO
+// // ==============================
+
+// const horizonteY = centroY - radio * 0.4;
+
+// // ----- CIELO -----
+// const gradCielo = ctx.createLinearGradient(0, 0, 0, horizonteY);
+// gradCielo.addColorStop(0, "#7fc4ff");
+// gradCielo.addColorStop(1, "#e0f4ff");
+
+// ctx.fillStyle = gradCielo;
+// ctx.fillRect(
+//     -canvas.width,
+//     -canvas.height,
+//     canvas.width * 3,
+//     horizonteY + canvas.height
+// );
+
+//     // ----- SUELO -----
+//     ctx.fillStyle = "#7bbf35";
+//     ctx.fillRect(
+//         -canvas.width,
+//         horizonteY,
+//         canvas.width * 3,
+//         canvas.height * 3
+//     );
+
+//     // ----- MONTAÑAS -----
+//     ctx.fillStyle = "#5f8f2a";
+//     ctx.beginPath();
+//     ctx.moveTo(-canvas.width, horizonteY);
+//     ctx.lineTo(canvas.width * 0.25, horizonteY - 80);
+//     ctx.lineTo(canvas.width * 0.5, horizonteY);
+//     ctx.lineTo(canvas.width * 0.75, horizonteY - 60);
+//     ctx.lineTo(canvas.width * 2, horizonteY);
+//     ctx.closePath();
+//     ctx.fill();
+
+
+
+//     // ==============================
+//     // BALÍSTICA
+//     // ==============================
+
+//     const rojoX = centroX;
+//     const rojoY = centroY;
+
+//     const caidaCm = -datos.alturaCm;
+//     const baseY = centroY + cmToPixel(caidaCm);
+
+//     const vAnimal = parseFloat(document.getElementById("velAnimal").value);
+//     const anguloAnimal = parseFloat(document.getElementById("anguloAnimal").value) * Math.PI / 180;
+
+//     const adelantoM = -datos.adelantoCm / 100;
+//     const xAnimalM = adelantoM + vAnimal * Math.cos(anguloAnimal) * tiempoFisico;
+//     const desplazamientoX = cmToPixel(xAnimalM * 100);
+
+//     const alturaRealCm = 75;
+//     const altoPx = cmToPixel(alturaRealCm);
+//     const anchoPx = altoPx * 1.6;
+
+//     const offsetVitalX = anchoPx * 0.15;
+
+//     const animalX = centroX - offsetVitalX + desplazamientoX;
+//     const animalY = baseY;
+
+//     // Animal
+//     ctx.fillStyle = "#5a3e36";
+//     ctx.strokeStyle = "black";
+//     ctx.lineWidth = 2;
+
+//     ctx.beginPath();
+//     ctx.ellipse(animalX, animalY, anchoPx / 2, altoPx / 2, 0, 0, Math.PI * 2);
+//     ctx.fill();
+//     ctx.stroke();
+
+//     // Cabeza
+//     const cabezaRadio = altoPx * 0.25;
+//     const cabezaX = animalX + anchoPx * 0.45;
+//     const cabezaY = animalY - altoPx * 0.15;
+
+//     ctx.beginPath();
+//     ctx.ellipse(cabezaX, cabezaY, cabezaRadio, cabezaRadio * 0.8, 0, 0, Math.PI * 2);
+//     ctx.fill();
+//     ctx.stroke();
+
+//     // Zona vital
+//     const vitalAncho = cmToPixel(40);
+//     const vitalAlto = cmToPixel(35);
+
+//     const vitalX = animalX + offsetVitalX;
+//     const vitalY = animalY + altoPx * 0.05;
+
+//     ctx.fillStyle = "rgba(255,220,0,0.5)";
+//     ctx.strokeStyle = "darkred";
+
+//     ctx.beginPath();
+//     ctx.ellipse(vitalX, vitalY, vitalAncho / 2, vitalAlto / 2, 0, 0, Math.PI * 2);
+//     ctx.fill();
+//     ctx.stroke();
+
+//     ctx.restore(); // quitar zoom
+//     ctx.restore(); // quitar clip
+
+//     // ==============================
+//     // EXTERIOR OSCURO
+//     // ==============================
+
+//     ctx.fillStyle = "rgba(0,0,0,0.7)";
+//     ctx.beginPath();
+//     ctx.rect(0, 0, canvas.width, canvas.height);
+//     ctx.arc(centroX, centroY, radio, 0, Math.PI * 2, true);
+//     ctx.fill("evenodd");
+
+//     // Borde
+//     ctx.lineWidth = 18;
+//     ctx.strokeStyle = "#222";
+//     ctx.beginPath();
+//     ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+//     ctx.stroke();
+
+//     // Cruz
+//     ctx.strokeStyle = "black";
+//     ctx.lineWidth = 2;
+
+//     ctx.beginPath();
+//     ctx.moveTo(centroX - radio, centroY);
+//     ctx.lineTo(centroX + radio, centroY);
+//     ctx.stroke();
+
+//     ctx.beginPath();
+//     ctx.moveTo(centroX, centroY - radio);
+//     ctx.lineTo(centroX, centroY + radio);
+//     ctx.stroke();
+
+//     // Punto rojo
+//     ctx.fillStyle = "red";
+//     ctx.beginPath();
+//     ctx.arc(centroX, centroY, 5, 0, Math.PI * 2);
+//     ctx.fill();
+//}
+
+function generarHierba(canvas, horizonteY) {
+
+    hierba = [];
+
+    for (let i = 0; i < 2500; i++) {
+
+        const x = Math.random() * canvas.width * 3 - canvas.width;
+        const y = horizonteY + Math.random() * (canvas.height - horizonteY);
+
+        const profundidad = (y - horizonteY) / (canvas.height - horizonteY);
+
+        hierba.push({
+            x: x,
+            y: y,
+            altura: 3 + profundidad * 18,
+            inclinacion: (Math.random() - 0.5) * 3,
+            tono: 35 + Math.random() * 60,
+            alpha: 0.25 + profundidad * 0.55,
+            grosor: 0.4 + profundidad * 1.8
+        });
+    }
+}
+
+
+
+function dibujarEscenaBalistica(datos, tiempoFisico = 0) {
+
+    if (!imagenesListas) return;
+
+    const canvas = document.getElementById("simulacion");
     const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const centroX = canvas.width / 2;
+    const centroY = canvas.height / 2;
 
-    const margen = 50;
-    const ancho = canvas.width - margen*2;
-    const alto = canvas.height - margen*2;
+    const aumento = parseFloat(document.getElementById("zoom").value);
+    const zoom = aumento / 6;
+    const distancia = datos.distancia;
 
-    const maxDist = 300;
+    const campoVertical1x = 250;
+    const campoVertical = campoVertical1x / aumento;
+    const pxPorMrad = canvas.height / campoVertical;
 
-    // Autoescala vertical según trayectoria real
-    let ys = trayectoria
-        .filter(p=>p.x<=maxDist)
-        .map(p=>p.y);
-
-    const maxAltura = Math.max(...ys) + 0.02;
-    const minAltura = Math.min(...ys) - 0.02;
-
-    function escalaX(x){
-        return margen + (x/maxDist)*ancho;
+    function cmToPixel(cm) {
+        const anguloMrad = (cm / (distancia * 100)) * 1000;
+        return anguloMrad * pxPorMrad;
     }
 
-    function escalaY(y){
-        return margen + alto - ((y-minAltura)/(maxAltura-minAltura))*alto;
+    const radio = canvas.height * 0.38;
+
+    // ==============================
+    // ZOOM DEL MUNDO COMPLETO
+    // ==============================
+
+    ctx.save();
+    ctx.translate(centroX, centroY);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-centroX, -centroY);
+
+    // ==============================
+    // FONDO
+    // ==============================
+
+    const horizonteY = centroY - radio * 0.4;
+    if (hierba.length === 0) {
+        generarHierba(canvas, horizonteY);
     }
 
-    // --- CUADRÍCULA ---
-    ctx.strokeStyle="#eee";
-    ctx.lineWidth=1;
 
-    for(let d=0; d<=maxDist; d+=50){
+    const gradCielo = ctx.createLinearGradient(0, 0, 0, horizonteY);
+    gradCielo.addColorStop(0, "#7fc4ff");
+    gradCielo.addColorStop(1, "#e0f4ff");
+
+    ctx.fillStyle = gradCielo;
+    ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 3, horizonteY + canvas.height);
+
+    //ctx.fillStyle = "#7bbf35";
+    //ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
+
+
+// ==============================
+// SUELO CON PROFUNDIDAD
+// ==============================
+
+const gradSuelo = ctx.createLinearGradient(
+    0,
+    horizonteY,
+    0,
+    canvas.height
+);
+
+gradSuelo.addColorStop(0, "#6cad2f");
+gradSuelo.addColorStop(1, "#2f5d14");
+
+ctx.fillStyle = gradSuelo;
+ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
+// ==============================
+// HIERBA GLOBAL ESTABLE
+// ==============================
+
+if (hierba.length === 0) {
+    generarHierba(canvas, horizonteY);
+}
+
+
+
+    ctx.fillStyle = "#5f8f2a";
+    ctx.beginPath();
+    ctx.moveTo(-canvas.width, horizonteY);
+    ctx.lineTo(canvas.width * 0.25, horizonteY - 80);
+    ctx.lineTo(canvas.width * 0.5, horizonteY);
+    ctx.lineTo(canvas.width * 0.75, horizonteY - 60);
+    ctx.lineTo(canvas.width * 2, horizonteY);
+    ctx.closePath();
+    ctx.fill();
+
+    // ==============================
+    // BALÍSTICA
+    // ==============================
+
+    const rojoX = centroX;
+    const rojoY = centroY;
+
+    const caidaCm = -datos.alturaCm;
+    const baseY = centroY + cmToPixel(caidaCm);
+
+    const vAnimal = parseFloat(document.getElementById("velAnimal").value);
+    const anguloAnimal = parseFloat(document.getElementById("anguloAnimal").value) * Math.PI / 180;
+
+    const adelantoM = -datos.adelantoCm / 100;
+    const xAnimalM = adelantoM + vAnimal * Math.cos(anguloAnimal) * tiempoFisico;
+    const desplazamientoX = cmToPixel(xAnimalM * 100);
+
+    const alturaRealCm = 75;
+    const altoPx = cmToPixel(alturaRealCm);
+    const anchoPx = altoPx * 1.6;
+
+    const offsetVitalX = anchoPx * 0.15;
+
+    const animalX = centroX - offsetVitalX + desplazamientoX;
+    const animalY = baseY;
+
+
+
+// ==============================
+// HIERBA REALISTA
+// ==============================
+
+
+    for (let brizna of hierba) {
+
+        // Evitar dibujar hierba debajo del animal
+        const dentroX = Math.abs(brizna.x - animalX) < anchoPx * 0.5;
+        const dentroY = brizna.y > animalY - altoPx * 0.2 &&
+                        brizna.y < animalY + altoPx * 0.6;
+
+        if (dentroX && dentroY) continue;
+
+        ctx.strokeStyle = `rgba(20, ${brizna.tono}, 10, ${brizna.alpha})`;
+        ctx.lineWidth = brizna.grosor;
+
         ctx.beginPath();
-        ctx.moveTo(escalaX(d), margen);
-        ctx.lineTo(escalaX(d), margen+alto);
+        ctx.moveTo(brizna.x, brizna.y);
+        ctx.lineTo(brizna.x + brizna.inclinacion, brizna.y - brizna.altura);
         ctx.stroke();
     }
 
-    for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
-        ctx.beginPath();
-        ctx.moveTo(margen, escalaY(h/100));
-        ctx.lineTo(margen+ancho, escalaY(h/100));
-        ctx.stroke();
-    }
 
-    // --- ZONA VITAL (banda suave) ---
-    ctx.fillStyle="rgba(0,150,0,0.08)";
-    ctx.fillRect(
-        margen,
-        escalaY(zona),
-        ancho,
-        escalaY(-zona)-escalaY(zona)
+
+// ==============================
+// SOMBRA EN EL SUELO
+// ==============================
+
+ctx.fillStyle = "rgba(0,0,0,0.25)";
+ctx.beginPath();
+ctx.ellipse(
+    animalX,
+    animalY + altoPx * 0.45,
+    anchoPx * 0.45,
+    altoPx * 0.18,
+    0,
+    0,
+    Math.PI * 2
+);
+ctx.fill();
+
+
+// ==============================
+// CUERPO
+// ==============================
+
+ctx.fillStyle = "#5a3e36";
+ctx.strokeStyle = "black";
+ctx.lineWidth = 2;
+
+// ctx.beginPath();
+// ctx.ellipse(animalX, animalY, anchoPx / 2, altoPx / 2, 0, 0, Math.PI * 2);
+// ctx.fill();
+// ctx.stroke();
+ctx.beginPath();
+
+// Parte trasera
+ctx.moveTo(animalX - anchoPx * 0.5, animalY);
+
+// Lomo arqueado
+// ctx.quadraticCurveTo(
+//     animalX - anchoPx * 0.1,
+//     animalY - altoPx * 0.6,
+//     animalX + anchoPx * 0.3,
+//     animalY - altoPx * 0.4
+// );
+ctx.quadraticCurveTo(
+    animalX - anchoPx * 0.25,
+    animalY - altoPx * 0.85,
+    animalX + anchoPx * 0.25,
+    animalY - altoPx * 0.4
+);
+
+// Hombro hacia cabeza
+ctx.quadraticCurveTo(
+    animalX + anchoPx * 0.55,
+    animalY - altoPx * 0.15,
+    animalX + anchoPx * 0.5,
+    animalY + altoPx * 0.05
+);
+
+// Barriga
+ctx.quadraticCurveTo(
+    animalX + anchoPx * 0.3,
+    animalY + altoPx * 0.55,
+    animalX - anchoPx * 0.4,
+    animalY + altoPx * 0.45
+);
+
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+// ==============================
+// PATAS
+// ==============================
+
+ctx.fillStyle = "#3b2621";
+
+const pataAncho = anchoPx * 0.12;
+const pataAlto = altoPx * 0.65;
+const basePatasY = animalY + altoPx * 0.35;
+
+// trasera
+ctx.fillRect(
+    animalX - anchoPx * 0.30,
+    basePatasY,
+    pataAncho,
+    pataAlto
+);
+
+// delantera
+ctx.fillRect(
+    animalX + anchoPx * 0.05,
+    basePatasY,
+    pataAncho,
+    pataAlto
+);
+
+ctx.fillStyle = "#4a2f28";
+
+ctx.beginPath();
+ctx.moveTo(animalX + anchoPx * 0.15, animalY - altoPx * 0.25);
+ctx.lineTo(animalX + anchoPx * 0.45, animalY - altoPx * 0.15);
+ctx.lineTo(animalX + anchoPx * 0.35, animalY + altoPx * 0.15);
+ctx.lineTo(animalX + anchoPx * 0.1, animalY + altoPx * 0.05);
+ctx.closePath();
+ctx.fill();
+
+
+// ==============================
+// CABEZA
+// ==============================
+
+const cabezaRadio = altoPx * 0.25;
+const cabezaX = animalX + anchoPx * 0.45;
+const cabezaY = animalY - altoPx * 0.15;
+
+ctx.beginPath();
+ctx.ellipse(
+    cabezaX,
+    cabezaY,
+    cabezaRadio * 1.5,
+    cabezaRadio * 0.65,
+    0,
+    0,
+    Math.PI * 2
+);
+ctx.fill();
+ctx.stroke();
+
+// Hocico
+ctx.fillStyle = "#2b1a15";
+ctx.beginPath();
+ctx.ellipse(
+    cabezaX + cabezaRadio * 0.9,
+    cabezaY + cabezaRadio * 0.2,
+    cabezaRadio * 0.5,
+    cabezaRadio * 0.35,
+    0,
+    0,
+    Math.PI * 2
+);
+ctx.fill();
+
+// Oreja
+ctx.fillStyle = "#3a231c";
+ctx.beginPath();
+ctx.moveTo(
+    cabezaX - cabezaRadio * 0.4,
+    cabezaY - cabezaRadio * 0.7
+);
+ctx.lineTo(
+    cabezaX - cabezaRadio * 0.8,
+    cabezaY - cabezaRadio * 1.4
+);
+ctx.lineTo(
+    cabezaX + cabezaRadio * 0.2,
+    cabezaY - cabezaRadio * 1.1
+);
+ctx.closePath();
+ctx.fill();
+
+// ==============================
+// COLMILLOS
+// ==============================
+
+ctx.fillStyle = "#f5f2e8";   // blanco marfil
+ctx.strokeStyle = "#cfc9b8";
+ctx.lineWidth = 1;
+
+// Colmillo superior visible
+ctx.beginPath();
+ctx.moveTo(
+    cabezaX + cabezaRadio * 1.1,
+    cabezaY + cabezaRadio * 0.2
+);
+
+ctx.quadraticCurveTo(
+    cabezaX + cabezaRadio * 1.35,
+    cabezaY + cabezaRadio * 0.05,
+    cabezaX + cabezaRadio * 1.2,
+    cabezaY + cabezaRadio * 0.35
+);
+
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+
+// ==============================
+// RABO
+// ==============================
+
+ctx.strokeStyle = "#2b1a16";
+ctx.lineWidth = anchoPx * 0.015;
+ctx.lineCap = "round";
+
+ctx.beginPath();
+
+// Inicio en parte trasera alta
+ctx.moveTo(
+    animalX - anchoPx * 0.48,
+    animalY - altoPx * 0.1
+);
+
+// Curva hacia arriba
+ctx.quadraticCurveTo(
+    animalX - anchoPx * 0.65,
+    animalY - altoPx * 0.45,
+    animalX - anchoPx * 0.55,
+    animalY - altoPx * 0.6
+);
+
+ctx.stroke();
+
+
+// Mechón final
+ctx.fillStyle = "#1c110d";
+ctx.beginPath();
+ctx.arc(
+    animalX - anchoPx * 0.55,
+    animalY - altoPx * 0.6,
+    anchoPx * 0.025,
+    0,
+    Math.PI * 2
+);
+ctx.fill();
+
+// ==============================
+// ZONA VITAL
+// ==============================
+
+const vitalAncho = cmToPixel(40);
+const vitalAlto = cmToPixel(35);
+
+const vitalX = animalX + offsetVitalX;
+const vitalY = animalY + altoPx * 0.05;
+
+ctx.fillStyle = "rgba(255,220,0,0.5)";
+ctx.strokeStyle = "darkred";
+
+ctx.beginPath();
+ctx.ellipse(vitalX, vitalY, vitalAncho / 2, vitalAlto / 2, 0, 0, Math.PI * 2);
+ctx.fill();
+ctx.stroke();
+
+// ==============================
+// IMPACTO AZUL
+// ==============================
+
+if (mostrarImpacto) {
+
+    ctx.beginPath();
+    ctx.arc(vitalX, vitalY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = "#00BFFF";
+    ctx.fill();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "white";
+    ctx.stroke();
+}
+
+    ctx.restore(); // quitar zoom
+
+    // ==============================
+    // VIÑETEADO SUAVE (HÍBRIDO)
+    // ==============================
+
+    const gradVigneta = ctx.createRadialGradient(
+        centroX, centroY, radio * 0.75,
+        centroX, centroY, radio * 1.4
     );
 
-    // --- LÍNEA DE MIRA ---
-    ctx.strokeStyle="#444";
-    ctx.lineWidth=2;
+    gradVigneta.addColorStop(0, "rgba(0,0,0,0)");
+    gradVigneta.addColorStop(1, "rgba(0,0,0,0.55)");
+
+    ctx.fillStyle = gradVigneta;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // ==============================
+    // BORDE DEL VISOR
+    // ==============================
+
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = "#222";
     ctx.beginPath();
-    ctx.moveTo(escalaX(0), escalaY(0));
-    ctx.lineTo(escalaX(maxDist), escalaY(0));
+    ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
     ctx.stroke();
 
-    // --- TRAYECTORIA ---
-    ctx.strokeStyle="#e74c3c";
-    ctx.lineWidth=2.5;
+    // ==============================
+    // CRUZ
+    // ==============================
+
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+
     ctx.beginPath();
+    ctx.moveTo(centroX - radio, centroY);
+    ctx.lineTo(centroX + radio, centroY);
+    ctx.stroke();
 
-    let primero=true;
+    ctx.beginPath();
+    ctx.moveTo(centroX, centroY - radio);
+    ctx.lineTo(centroX, centroY + radio);
+    ctx.stroke();
 
-    trayectoria.forEach(p=>{
-        if(p.x<=maxDist){
-            if(primero){
-                ctx.moveTo(escalaX(p.x), escalaY(p.y));
-                primero=false;
-            } else {
-                ctx.lineTo(escalaX(p.x), escalaY(p.y));
+    // Punto rojo
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(centroX, centroY, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+
+//---------------------------------------------
+// ==============================
+// PROFUNDIDAD INTERNA DEL TUBO
+// ==============================
+
+const gradTubo = ctx.createRadialGradient(
+    centroX,
+    centroY,
+    radio * 0.65,
+    centroX,
+    centroY,
+    radio
+);
+
+gradTubo.addColorStop(0, "rgba(0,0,0,0)");
+gradTubo.addColorStop(1, "rgba(0,0,0,0.85)");
+
+ctx.fillStyle = gradTubo;
+ctx.beginPath();
+ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+ctx.fill();
+
+
+// ==============================
+// REFLEJO DE CRISTAL
+// ==============================
+
+const gradCristal = ctx.createRadialGradient(
+    centroX - radio * 0.35,
+    centroY - radio * 0.45,
+    0,
+    centroX,
+    centroY,
+    radio
+);
+
+gradCristal.addColorStop(0, "rgba(255,255,255,0.25)");
+gradCristal.addColorStop(1, "rgba(255,255,255,0)");
+
+ctx.fillStyle = gradCristal;
+ctx.beginPath();
+ctx.arc(centroX, centroY, radio * 0.95, 0, Math.PI * 2);
+ctx.fill();
+
+
+// ==============================
+// BORDE METÁLICO MATE
+// ==============================
+
+ctx.lineWidth = 22;
+ctx.strokeStyle = "#111";
+ctx.beginPath();
+ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+ctx.stroke();
+
+
+// ==============================
+// BORDE INTERNO MÁS OSCURO
+// ==============================
+
+ctx.lineWidth = 6;
+ctx.strokeStyle = "#000";
+ctx.beginPath();
+ctx.arc(centroX, centroY, radio - 10, 0, Math.PI * 2);
+ctx.stroke();
+
+
+
+
+
+}
+
+
+    function dibujarSimulacion(trayFinal, d, beta, alturaAnimal, distanciaEfectiva, tReal) {
+
+        //console.log("Click detectado en distancia:", d);
+
+        const canvas = document.getElementById("simulacion");
+        const ctx = canvas.getContext("2d");
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const escalaX = canvas.width / (d * 1.2);
+        // Buscar altura máxima real en la trayectoria
+        let maxY = 0;
+
+        for (let i = 0; i < trayFinal.length; i++) {
+            if (trayFinal[i].y > maxY) {
+                maxY = trayFinal[i].y;
             }
         }
-    });
 
-    ctx.stroke();
+        // También considerar la altura del terreno y animal
+        const alturaTerrenoFinal = d * Math.tan(beta);
+        maxY = Math.max(maxY, alturaTerrenoFinal, alturaAnimal);
 
-    // --- EJES ---
-    ctx.strokeStyle="#000";
-    ctx.lineWidth=1.5;
+        // Añadir margen visual
+        maxY *= 1.2;
 
-    // eje vertical
-    ctx.beginPath();
-    ctx.moveTo(margen, margen);
-    ctx.lineTo(margen, margen+alto);
-    ctx.stroke();
+         // Calcular escala vertical inteligente
+        const escalaY = (canvas.height - 100) / maxY;
+            const origenX = 50;
+            const origenY = canvas.height - 50;
 
-    // eje horizontal inferior
-    ctx.beginPath();
-    ctx.moveTo(margen, margen+alto);
-    ctx.lineTo(margen+ancho, margen+alto);
-    ctx.stroke();
+        // ==============================
+        // 1️⃣ Dibujar terreno
+        // ==============================
 
-    // --- ETIQUETAS DISTANCIA ---
-    ctx.fillStyle="#000";
-    ctx.font="12px Arial";
+        const alturaTerreno = d * Math.tan(beta);
 
-    for(let d=0; d<=maxDist; d+=50){
-        ctx.fillText(d+" m", escalaX(d)-15, margen+alto+20);
+        ctx.beginPath();
+        ctx.moveTo(origenX, origenY);
+        ctx.lineTo(
+            origenX + d * escalaX,
+            origenY - alturaTerreno * escalaY
+        );
+        ctx.strokeStyle = "green";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // ==============================
+        // 2️⃣ Dibujar trayectoria REAL
+        // ==============================
+
+        ctx.beginPath();
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 1.5;
+
+        for (let i = 0; i < trayFinal.length; i++) {
+
+            let punto = trayFinal[i];
+
+            let px = origenX + punto.x * escalaX;
+            let py = origenY - punto.y * escalaY;
+
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+
+        ctx.stroke();
+
+        // ==============================
+        // 3️⃣ Dibujar animal
+        // ==============================
+
+        const pxAnimalX = origenX + distanciaEfectiva * escalaX;
+        const pxAnimalY = origenY - alturaAnimal * escalaY;
+
+        ctx.beginPath();
+        ctx.arc(pxAnimalX, pxAnimalY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "red";
+        ctx.fill();
+
+        // ==============================
+        // 4️⃣ Dibujar punto de impacto
+        // ==============================
+
+        let impacto = trayFinal.find(p => p.t >= tReal);
+
+        if (impacto) {
+
+            let pxImpactoX = origenX + impacto.x * escalaX;
+            let pxImpactoY = origenY - impacto.y * escalaY;
+
+            ctx.beginPath();
+            ctx.arc(pxImpactoX, pxImpactoY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = "orange";
+            ctx.fill();
+        }
+
+        // ==============================
+        // 5️⃣ Dibujar tirador
+        // ==============================
+
+        ctx.beginPath();
+        ctx.arc(origenX, origenY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "black";
+        ctx.fill();
+    }
+    let animando = false;
+
+    function disparar() {
+
+        if (!ultimaSimulacion || animando) return;
+
+        animando = true;
+
+        mostrarImpacto = false;
+        impactoX = null;
+        impactoY = null;
+
+        const tiempoVuelo = ultimaSimulacion.tiempoVuelo;
+        const duracionVisual = 2000;
+
+        const inicio = performance.now();
+
+        function animar(t) {
+
+            let transcurrido = t - inicio;
+            let progreso = transcurrido / duracionVisual;
+            if (progreso > 1) progreso = 1;
+
+            let tiempoFisico = progreso * tiempoVuelo;
+
+            dibujarEscenaBalistica(ultimaSimulacion, tiempoFisico);
+
+            // if (progreso < 1) {
+            //     requestAnimationFrame(animar);
+            // } else {
+            // animando = false;
+            // actualizarPanel(ultimaSimulacion);
+            // }
+            if (progreso < 1) {
+                requestAnimationFrame(animar);
+            } else {
+                animando = false;
+
+                // ACTIVAR IMPACTO
+                mostrarImpacto = true;
+
+                actualizarPanel(ultimaSimulacion);
+
+                // Redibujar una vez más para mostrar impacto
+                dibujarEscenaBalistica(ultimaSimulacion, tiempoVuelo);
+            }
+        }
+
+        requestAnimationFrame(animar);
     }
 
-    // --- ETIQUETAS ALTURA ---
-    for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
-        ctx.fillText(h+" cm", margen-40, escalaY(h/100)+4);
+function actualizarPanel(datos) {
+
+    const panel = document.getElementById("datosImpacto");
+
+    if (!datos) {
+        panel.innerHTML = "Sin disparo";
+        return;
     }
 
-    // --- TÍTULO ---
-    ctx.font="bold 14px Arial";
-    ctx.fillText("Trayectoria balística", margen, 25);
+    panel.innerHTML = `
+        Distancia: ${datos.distancia.toFixed(0)} m<br>
+        Tiempo de vuelo: ${datos.tiempoVuelo.toFixed(3)} s<br>
+        Caída vertical: ${datos.alturaCm.toFixed(2)} cm<br>
+        Adelanto necesario: ${datos.adelantoCm.toFixed(2)} cm<br>
+        Velocidad restante: ${datos.velocidad.toFixed(1)} m/s
+    `;
 }
+
+
 
 </script>
 <hr style="margin-top:40px;">
 
 <div style="text-align:right; font-size:12px; color:#777;">
-    © 2026 Fco. Díez – Calculadora Balística Personal 
+    © 2026 F. Díez – Calculadora Balística Personal
 </div>
-	
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js")
-    .then(() => console.log("Service Worker registrado"))
-    .catch(error => console.log("Error registrando SW:", error));
-}
-</script>
-
 </body>
 </html>
