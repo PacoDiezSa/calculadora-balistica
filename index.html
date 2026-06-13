@@ -203,9 +203,6 @@ let hierba = [];
 let vientoOffset = 0;
 let mostrarImpacto = false;
 
-const fondo = new Image();
-const jabali = new Image();
-
 
 const zoomSlider = document.getElementById("zoom");
 const zoomValor = document.getElementById("zoomValor");
@@ -219,21 +216,7 @@ zoomSlider.addEventListener("input", function () {
     }
 });
 
-let imagenesListas = false;
-
-function comprobarCarga() {
-    if (fondo.complete && jabali.complete) {
-        imagenesListas = true;
-        //console.log("✅ Imágenes listas");
-    }
-}
-
-fondo.onload = comprobarCarga;
-jabali.onload = comprobarCarga;
-
-fondo.src = "img/fondo.png";
-jabali.src = "img/jabali.png";
-
+let imagenesListas = true;
 function tiempoHastaDistancia(d, tray) {
 
     for (let i = 1; i < tray.length; i++) {
