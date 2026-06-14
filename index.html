@@ -199,6 +199,18 @@ tr.seleccionada {
     color:#444;
 }
 
+
+.tabla-contenedor{
+    width:100%;
+    overflow-x:auto;
+}
+
+canvas{
+    max-width:100%;
+    height:auto;
+    display:block;
+    margin:auto;
+}
 /* ===== RESPONSIVE ===== */
 
 @media (max-width: 768px){
@@ -251,8 +263,7 @@ tr.seleccionada {
 value="Winchester Extreme Point 30-06 180gr"
 style="width: 300px; margin-bottom:10px;">
 <h2>Modelo Balístico Completo</h2>
-<h3 id="tituloCartucho" style="margin-top:20px; color:#2c3e50;"></h3><table id="tabla">
-
+<h3 id="tituloCartucho" style="margin-top:20px; color:#2c3e50;"></h3>
 <label>BC (G1)</label>
 <input id="bc" type="number" step="0.001" value="0.422">
 
@@ -329,7 +340,8 @@ style="width: 300px; margin-bottom:10px;">
     Restablecer valores iniciales
 </button>
 
-
+<div class="tabla-contenedor">
+<table id="tabla">
 <thead>
 <tr>
 <th>Dist. hor (m)</th>
@@ -347,7 +359,7 @@ style="width: 300px; margin-bottom:10px;">
 </thead>
 <tbody></tbody>
 </table>
-
+</div>
 
 <canvas id="simulacion" width="900" height="400"></canvas>
 
