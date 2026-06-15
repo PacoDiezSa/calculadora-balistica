@@ -39,23 +39,3 @@ self.addEventListener("fetch", event => {
   );
 });
 
-self.addEventListener("message", event => {
-
-  if (event.data === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-
-  if (event.data === "GET_VERSION") {
-
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.postMessage({
-          type: "APP_VERSION",
-          version: APP_VERSION
-        });
-      });
-    });
-
-  }
-
-});
