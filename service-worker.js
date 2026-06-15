@@ -39,8 +39,6 @@ self.addEventListener("fetch", event => {
   );
 });
 
-/* ✅ AÑADE ESTO AL FINAL */
-
 self.addEventListener("message", event => {
 
   if (event.data === "SKIP_WAITING") {
@@ -48,10 +46,16 @@ self.addEventListener("message", event => {
   }
 
   if (event.data === "GET_VERSION") {
-    event.source.postMessage({
-      type: "APP_VERSION",
-      version: APP_VERSION
+
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: "APP_VERSION",
+          version: APP_VERSION
+        });
+      });
     });
+
   }
 
 });
