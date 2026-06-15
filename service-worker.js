@@ -1,5 +1,5 @@
-const CACHE_NAME = "balistica-v2";
-
+const APP_VERSION = "2.0";
+const CACHE_NAME = "balistica-v" + APP_VERSION;
 const urlsToCache = [
   "./",
   "./index.html",
@@ -42,7 +42,16 @@ self.addEventListener("fetch", event => {
 /* ✅ AÑADE ESTO AL FINAL */
 
 self.addEventListener("message", event => {
+
   if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
   }
+
+  if (event.data === "GET_VERSION") {
+    event.source.postMessage({
+      type: "APP_VERSION",
+      version: APP_VERSION
+    });
+  }
+
 });
