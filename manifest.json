@@ -1,6 +1,7 @@
 {
   "name": "Calculadora Balística - Modelo Balístico Avanzado",
   "short_name": "Calculadora Balística",
+  "id": "/calculadora-balistica/",
   "description": "Calculadora balística avanzada para cálculo de trayectoria, viento y correcciones en MRAD.",
   "start_url": "./",
   "display": "standalone",
