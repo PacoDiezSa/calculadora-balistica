@@ -1845,24 +1845,25 @@
 
             const html = `<!DOCTYPE html>
     <html>
-    <head>
-    <title>Simulación balística</title>
-    <style>
-body {
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación balística</title>
+<style>
+html, body {
     margin: 0;
-    background: #e6eef5;
-    font-family: Arial;
-    text-align: center;
+    padding: 0;
 }
 
 canvas {
+    width: 95vw;           /* ocupa casi todo el ancho */
+    height: auto;
+    max-height: 60vh;      /* nunca más del 60% del alto */
     background: linear-gradient(#cfe3f5, #9fc2dd);
     display: block;
-    margin: 20px auto;
-    border-radius: 8px;
+    margin: 15px auto;
+    border-radius: 12px;
     touch-action: none;
 }
-
 button {
     background: linear-gradient(135deg, #4f8cff, #2f6fe0);
     color: white;
@@ -1923,7 +1924,7 @@ button:active {
     <button onclick="toggleCoords()">📍 Mostrar coords</button>
     </div>
 
-    <canvas id="canvas" width="900" height="400"></canvas>
+<canvas id="canvas"></canvas>
     <h3 id="resultado"></h3>
 
     <script>
@@ -1934,7 +1935,14 @@ button:active {
     const zonaVitalCm = ${zonaActual};
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+function ajustarCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.width * 0.45; // proporción similar a 900x400
+}
 
+window.addEventListener("resize", ajustarCanvas);
+ajustarCanvas();
     let animalX = 0;
     let inicioTiempo;
     let animando = true;
@@ -1967,15 +1975,15 @@ button:active {
         mostrarCoords = !mostrarCoords;
     }
 
-// Movimiento (ratón + dedo)
-canvas.addEventListener("pointermove", function(e) {
-    const rect = canvas.getBoundingClientRect();
-    crossX = e.clientX - rect.left;
-    crossY = e.clientY - rect.top;
-});
+    // Movimiento (ratón + dedo)
+    canvas.addEventListener("pointermove", function(e) {
+        const rect = canvas.getBoundingClientRect();
+        crossX = e.clientX - rect.left;
+        crossY = e.clientY - rect.top;
+    });
 
-// Pulsación (ratón + dedo)
-canvas.addEventListener("pointerdown", function(e) {
+    // Pulsación (ratón + dedo)
+    canvas.addEventListener("pointerdown", function(e) {
 
     const rect = canvas.getBoundingClientRect();
     crossX = e.clientX - rect.left;
