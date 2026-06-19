@@ -1,5 +1,4 @@
-<!-- 19/06/2026 14:18 -->
-
+<!-- 19/06/2026 19:18 -->
 <!DOCTYPE html>
 <html lang="es">
 
@@ -2013,24 +2012,94 @@ canvas.addEventListener("pointerdown", function(e) {
     }
 
     // ===== MÓVIL =====
-    if (e.pointerType === "touch") {
+ //   if (e.pointerType === "touch") {
 
-        const ahora = Date.now();
+  //      const ahora = Date.now();
 
         // Doble toque → reiniciar
-        if (ahora - ultimoToque < 300) {
-            corregirDisparo();
-            ultimoToque = 0;
-            return;
-        }
+  //      if (ahora - ultimoToque < 300) {
+  //          corregirDisparo();
+  //          ultimoToque = 0;
+  //          return;
+  //      }
 
-        ultimoToque = ahora;
+  //      ultimoToque = ahora;
 
         // Pulsación larga → disparar
-        temporizadorLongPress = setTimeout(() => {
-            disparar();
-        }, tiempoLongPress);
+   //     temporizadorLongPress = setTimeout(() => {
+   //         disparar();
+   //     }, tiempoLongPress);
+  //  }
+
+// ===== MOVIMIENTO (ratón + dedo) =====
+canvas.addEventListener("pointermove", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    crossX = e.clientX - rect.left;
+    crossY = e.clientY - rect.top;
+});
+
+
+// ===== CONTROL MULTI-TOUCH =====
+
+let punterosActivos = new Set();
+let ultimoToque = 0;
+
+canvas.addEventListener("pointerdown", function(e) {
+
+    const rect = canvas.getBoundingClientRect();
+    crossX = e.clientX - rect.left;
+    crossY = e.clientY - rect.top;
+
+    punterosActivos.add(e.pointerId);
+
+    // ===== PC =====
+    if (e.pointerType === "mouse") {
+
+        if (e.button === 0) {
+            disparar(); // click izquierdo
+        }
+
+        if (e.button === 2) {
+            corregirDisparo(); // click derecho
+        }
     }
+
+    // ===== MÓVIL =====
+    if (e.pointerType === "touch") {
+
+        // Si hay 2 dedos → disparar
+        if (punterosActivos.size === 2) {
+            disparar();
+        }
+
+        // Doble toque con un dedo → reiniciar
+        const ahora = Date.now();
+        if (punterosActivos.size === 1) {
+            if (ahora - ultimoToque < 300) {
+                corregirDisparo();
+                ultimoToque = 0;
+            }
+            ultimoToque = ahora;
+        }
+    }
+});
+
+canvas.addEventListener("pointerup", function(e) {
+    punterosActivos.delete(e.pointerId);
+});
+
+canvas.addEventListener("pointercancel", function(e) {
+    punterosActivos.delete(e.pointerId);
+});
+
+// Evitar menú contextual
+canvas.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+});
+
+
+
+
 });
 
 
@@ -2082,26 +2151,66 @@ function dibujarAnimal(x) {
     ctx.ellipse(x + 85, y - 4, 12, 9, 0.2, 0, Math.PI * 2);
     ctx.fill();
 
-    // // =====================
-    // // COLMILLO VISIBLE (único)
-    // // =====================
-    // ctx.fillStyle = "white";
+// // =====================
+// // COLMILLO VISIBLE (único)
+// // =====================
+// ctx.fillStyle = "white";
 
-    // ctx.beginPath();
-    // ctx.moveTo(x + 88, y - 4);
-    // ctx.quadraticCurveTo(x + 102, y - 1, x + 94, y + 7);
-    // ctx.quadraticCurveTo(x + 96, y + 2, x + 88, y - 4);
-    // ctx.fill();
+// ctx.beginPath();
+// ctx.moveTo(x + 87, y - 6);
+// ctx.quadraticCurveTo(x + 100, y - 2, x + 92, y + 5);
+// ctx.quadraticCurveTo(x + 95, y + 1, x + 87, y - 5);
+// ctx.fill();
+
+// // =====================
+// // COLMILLO NUEVO (más recto y agresivo)
+// // =====================
+// ctx.fillStyle = "white";
+
+// ctx.beginPath();
+
+// // base inferior
+// ctx.moveTo(x + 86, y + 2);
+
+// // borde exterior (curva suave hacia delante)
+// ctx.quadraticCurveTo(
+//     x + 105, y - 8,   // control (curvatura)
+//     x + 95, y - 18    // punta
+// );
+
+// // borde interior (más recto hacia la base)
+// ctx.lineTo(x + 88, y - 6);
+
+// // cerrar figura
+// ctx.closePath();
+// ctx.fill();
+
 // =====================
-// COLMILLO VISIBLE (único)
+// COLMILLO AFINADO
 // =====================
 ctx.fillStyle = "white";
 
 ctx.beginPath();
-ctx.moveTo(x + 87, y - 6);
-ctx.quadraticCurveTo(x + 100, y - 2, x + 92, y + 5);
-ctx.quadraticCurveTo(x + 95, y + 1, x + 87, y - 5);
+
+// base inferior más fina
+ctx.moveTo(x + 88, y + 1);
+
+// curva exterior (mantiene volumen)
+ctx.quadraticCurveTo(
+    x + 103, y - 10,   // control exterior
+    x + 95,  y - 18    // punta
+);
+
+// // lado interior más afilado (aquí está el cambio)
+// lado interior más afilado (aquí está el cambio)
+ctx.quadraticCurveTo(
+    x + 84,  y - 5,
+    x + 80,  y - 2
+);
+
+ctx.closePath();
 ctx.fill();
+
 
 // =====================
     // OREJA (más pequeña y natural)
