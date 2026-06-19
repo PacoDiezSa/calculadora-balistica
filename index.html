@@ -1,719 +1,751 @@
+<!-- 19/06/2026 8:53 -->
+
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Modelo Balístico Avanzado</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#111111">
-
-<style>
-
-body{
-    font-family: Arial, sans-serif;
-    background:#f4f4f4;
-    padding:20px;
-}
-
-.container{
-    max-width:1000px;
-    margin:auto;
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 0 10px rgba(0,0,0,0.1);
-}
-
-input{
-    width:100%;
-    padding:8px;
-    margin-bottom:12px;
-}
-
-button{
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-family:inherit;
-}
-
-/* ===== BOTONES ===== */
-
-.btn-principal{
-    width:100%;
-    padding:14px;
-    background:#1565c0;
-    color:white;
-    font-size:16px;
-}
-
-.btn-principal:hover{
-    background:#0d47a1;
-}
-
-.btn-secundario{
-    background:#546e7a;
-    color:white;
-    padding:8px 14px;
-    font-size:14px;
-    width:auto;
-}
-
-.btn-secundario:hover{
-    background:#37474f;
-}
-
-.btn-disparar{
-    margin-top:15px;
-    padding:12px 20px;
-    background:#2e7d32;
-    color:white;
-    font-size:15px;
-    border-radius:6px;
-}
-
-.btn-disparar:hover{
-    background:#1b5e20;
-}
-
-.btn-peligro{
-    background:#c62828;
-    color:white;
-    padding:8px 14px;
-    font-size:14px;
-    width:auto;
-}
-
-.btn-peligro:hover{
-    background:#8e0000;
-}
-
-.btn-restablecer{
-    width:100%;
-    padding:12px;
-    background:#607d8b;
-    color:white;
-    font-size:15px;
-    margin-top:15px;
-}
-
-.btn-restablecer:hover{
-    background:#455a64;
-}
-
-.zona-disparo{
-    text-align:center;
-    margin-top:20px;
-    margin-bottom:10px;
-}
-
-.btn-disparar{
-    padding:14px 28px;
-    background:#2e7d32;
-    color:white;
-    font-size:16px;
-    font-weight:600;
-    border-radius:8px;
-}
-
-.btn-disparar:hover{
-    background:#1b5e20;
-}
-
-/* ===== RESULTADOS ===== */
-
-.result{
-    margin-top:25px;
-    padding:18px;
-    background:#f1f5fb;
-    border-left:4px solid #1565c0;
-    border-radius:8px;
-    font-size:15px;
-}
-
-
-/* ===== TABLA ===== */
-
-table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:20px;
-}
-
-th, td{
-    border:1px solid #ddd;
-    padding:6px;
-    text-align:center;
-}
-
-th{
-    background:#eee;
-}
-/* ===== SELECCIÓN DE FILAS ===== */
-
-tr:hover {
-    background:#f1f5fb;
-    cursor:pointer;
-}
-
-tr.seleccionada {
-    background:#dbe9ff !important;
-    font-weight:600;
-}
-/* ===== PANEL PERFILES ===== */
-
-.panel-perfiles{
-    background:#f4f6f9;
-    padding:18px;
-    border-radius:8px;
-    margin-top:25px;
-    border:1px solid #e0e0e0;
-}
-
-.panel-perfiles h3{
-    margin:0 0 12px 0;
-    font-size:15px;
-    font-weight:600;
-    color:#333;
-}
-
-.perfil-linea{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-}
-
-#selectorPerfil{
-    padding:8px;
-    min-width:220px;
-    border-radius:4px;
-    border:1px solid #ccc;
-}
-
-.mensaje-guia{
-    margin-top:15px;
-    padding:10px 14px;
-    background:#f5f8fc;
-    border:1px solid #d6e2f3;
-    border-radius:6px;
-    font-size:13px;
-    color:#444;
-}
-
-
-.tabla-contenedor{
-    width:100%;
-    overflow-x:auto;
-}
-
-canvas{
-    max-width:100%;
-    height:auto;
-    display:block;
-    margin:auto;
-}
-/* ===== RESPONSIVE ===== */
-
-@media (max-width: 768px){
-
-    .container{
-        padding:15px;
-    }
-
-    input{
-        font-size:16px; /* evita zoom automático en iPhone */
-    }
-
-    .perfil-linea{
-        flex-direction:column;
-        align-items:stretch;
-    }
-
-    #selectorPerfil{
-        width:100%;
-    }
-
-    .btn-secundario,
-    .btn-peligro{
-        width:100%;
-    }
-
-    .btn-disparar{
-        width:100%;
-    }
-
-    table{
-        font-size:13px;
-    }
-
-    th, td{
-        padding:4px;
-    }
-
-}
-
-
-
-</style></head>
-
-<body>
-<div class="container">
-
-<label><b>Cartucho:</b></label>
-<input type="text" id="cartucho" 
-value="Winchester Extreme Point 30-06 180gr"
-style="width: 300px; margin-bottom:10px;">
-<h2>Modelo Balístico Completo</h2>
-<h3 id="tituloCartucho" style="margin-top:20px; color:#2c3e50;"></h3>
-<label>BC (G1)</label>
-<input id="bc" type="number" step="0.001" value="0.422">
-
-<label>Factor de calibración:</label>
-<input type="number" id="factorDrag" value="3000">
-
-<label>Velocidad inicial (m/s)</label>
-<input id="v0" type="number" value="838">
-
-<label>Altitud (m)</label>
-<input id="alt" type="number" value="1000">
-
-<label>Zona vital ± (cm)</label>
-<input id="zona" type="number" value="4">
-
-<label>Viento lateral (m/s)</label>
-<input id="viento" type="number" value="4">
-
-<label>Velocidad del animal (m/s)</label>
-<input id="velAnimal" type="number" value="8">
-
-<label>Pendiente terreno (°)</label>
-<input id="pendiente" type="number" value="0">
-
-<label>Ángulo animal (°)</label>
-<input id="anguloAnimal" type="number" value="0">
-
-<label>Sistema de torreta</label>
-<select id="sistema">
-    <option value="mrad">MRAD</option>
-    <option value="moa">MOA</option>
-</select>
-
-<label>Valor por click</label>
-<input id="valorClick" type="number" step="0.01" value="0.1">
-
-<label>Peso del proyectil (grains)</label>
-<input id="peso" type="number" value="180">
-
-<label>Segundo cero deseado (m)</label>
-<input id="ceroDeseado" type="number" value="200">
-
-<div class="panel-perfiles">
-
-    <h3>Gestión de perfiles</h3>
-
-    <div class="perfil-linea">
-        <select id="selectorPerfil"></select>
-
-        <button class="btn-secundario" onclick="guardarPerfil()">
-            Guardar
-        </button>
-
-        <button class="btn-secundario" onclick="cargarPerfil()">
-            Cargar
-        </button>
-
-        <button class="btn-peligro" onclick="eliminarPerfil()">
-            Eliminar
-        </button>
-    </div>
-
-</div>
-
-
-<button class="btn-principal" onclick="calcular()">
-    Calcular
-</button>
-
-
-<div class="result" id="resultado"></div>
-
-<button class="btn-restablecer" onclick="restablecerValores()">
-    Restablecer valores iniciales
-</button>
-
-<div class="tabla-contenedor">
-<table id="tabla">
-<thead>
-<tr>
-<th>Dist. hor (m)</th>
-<th>Dist. geométrica (m)</th>
-<th>Vel (m/s)</th>
-<th>Energía (J)</th>
-<th>Tray (cm)</th>
-<th>Viento (cm)</th>
-<th>Adelanto (cm)</th>
-<th>Dist. efectiva (m)</th>
-<th>Tiempo (s)</th>
-<th>Clicks ↑ (0.1 mrad)</th>
-<th>Clicks → (0.1 mrad)</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
-
-<canvas id="simulacion" width="900" height="400"></canvas>
-
-<div style="margin:20px 0; text-align:center;">
-    <label><strong>Aumento visor (x)</strong></label><br>
-
-    <input type="range"
-           id="zoom"
-           min="1"
-           max="12"
-           step="1"
-           value="6"
-           style="width:300px;">
-
-    <span id="zoomValor">6x</span>
-</div>
-
-<div class="zona-disparo">
-    <button class="btn-disparar" onclick="disparar()">
-        Disparar
-    </button>
-</div>
-
-<div id="panelImpacto" class="panel-impacto">
-    <h3>Datos del disparo</h3>
-    <div id="datosImpacto">Sin disparo</div>
-</div>
-
-<canvas id="grafica"
-        width="900"
-        height="300"
-        style="margin-top:30px;border:1px solid #ccc;">
-</canvas>
-
-</div>
-
-<script>
-
-function densidadAire(alt){
-    const rho0 = 1.225;
-    return rho0 * Math.exp(-alt/8500);
-}
-
-// ✅ VARIABLES GLOBALES (AQUÍ ARRIBA
-let trayGlobal = null;
-let betaGlobal = null;
-let velAnimalGlobal = null;
-let radGlobal = null;
-let ultimaSimulacion = null;
-let ultimaFila = null;
-let impactoX = null;
-let impactoY = null;
-let hierba = [];
-let vientoOffset = 0;
-let mostrarImpacto = false;
-
-
-const zoomSlider = document.getElementById("zoom");
-const zoomValor = document.getElementById("zoomValor");
-
-zoomSlider.addEventListener("input", function () {
-
-    zoomValor.textContent = this.value + "x";
-
-    if (ultimaSimulacion) {
-        dibujarEscenaBalistica(ultimaSimulacion);
-    }
-});
-
-let imagenesListas = true;
-function tiempoHastaDistancia(d, tray) {
-
-    for (let i = 1; i < tray.length; i++) {
-
-        let p1 = tray[i-1];
-        let p2 = tray[i];
-
-        if (p2.x >= d) {
-
-            let f = (d - p1.x)/(p2.x - p1.x);
-
-            return p1.t + f*(p2.t - p1.t);
-        }
-    }
-
-    return null; // por seguridad
-}
-
-function tiempoHastaIntercepcion(d, velAnimal, rad, tray) {
-
-    let t = tiempoHastaDistancia(d, tray);
-
-    for (let i = 0; i < 3; i++) {
-
-        let dNueva = d + velAnimal * Math.sin(rad) * t;
-
-        t = tiempoHastaDistancia(dNueva, tray);
-    }
-
-    return t;
-}
-
-function calcularBalistica(dSim){
-
-    if(!trayGlobal) return;
-
-    let idx = trayGlobal.findIndex(p => p.x >= dSim);
-    if(idx <= 0) return;
-
-    let p1 = trayGlobal[idx-1];
-    let p2 = trayGlobal[idx];
-
-    let f = (dSim - p1.x)/(p2.x - p1.x);
-
-    let punto = {
-        x: dSim,
-        y: p1.y + f*(p2.y - p1.y),
-        v: p1.v + f*(p2.v - p1.v),
-        t: p1.t + f*(p2.t - p1.t)
-    };
-
-    let tReal = tiempoHastaIntercepcion(
-        dSim,
-        velAnimalGlobal,
-        radGlobal,
-        trayGlobal
-    );
-
-    let distanciaEfectiva = dSim + velAnimalGlobal * Math.sin(radGlobal) * tReal;
-
-    let alturaTerreno = dSim * Math.tan(betaGlobal);
-    let deltaLong = velAnimalGlobal * Math.sin(radGlobal) * tReal;
-    let deltaAltura = deltaLong * Math.tan(betaGlobal);
-    let alturaAnimal = alturaTerreno + deltaAltura;
-
-    let adelantoCm = deltaLong * 100;
-    let alturaCm = (punto.y - alturaAnimal) * 100;
-
-    const datos = {
-        distancia: dSim,
-        adelantoCm,
-        alturaCm
-    };
-
-    //console.log(datos);
-
-    dibujarEscenaBalistica(datos);
-}
-
-function calcular(){
-    const nombreCartucho = document.getElementById("cartucho").value;
-
-    const bc = parseFloat(document.getElementById("bc").value);
-    const v0 = parseFloat(document.getElementById("v0").value);
-    const alt = parseFloat(document.getElementById("alt").value);
-    const zona = parseFloat(document.getElementById("zona").value) / 100;
-    const viento = parseFloat(document.getElementById("viento").value);
-    const sistema = document.getElementById("sistema").value;
-    const valorClick = parseFloat(document.getElementById("valorClick").value);
-    const pendiente = parseFloat(document.getElementById("pendiente").value);
-    const beta = pendiente * Math.PI / 180;
-    const pesoGrains = parseFloat(document.getElementById("peso").value);
-    const masa = pesoGrains * 0.00006479891;
-
-    const rho = densidadAire(alt);
-    const g = 9.81;
-    const visorAltura = 0.038;
-    const dt = 0.0005;
-    const factorDrag = parseFloat(document.getElementById("factorDrag").value);
-
-    document.getElementById("tituloCartucho").innerHTML =
-    "Tabla balística – " + nombreCartucho;
-    document.getElementById("tituloCartucho").innerHTML =
-    "Tabla balística – <b>" + nombreCartucho + "</b>" +
-    "<br><span style='font-size:14px; color:#555;'>"
-    + "BC (G1): " + bc +
-    " | V0: " + v0 +
-    " m/s | Factor: " + factorDrag +
-    "</span>";
-
-
-    function simular(theta){
-
-        let x = 0;
-        let y = -visorAltura;
-
-        let vx = v0 * Math.cos(theta);
-        let vy = v0 * Math.sin(theta);
-
-        let tiempo = 0;
-        let datos = [];
-
-        while(x <= 500 && y > -2){
-
-            let v = Math.sqrt(vx*vx + vy*vy);
-            const factorDrag = parseFloat(document.getElementById("factorDrag").value);
-	        let drag = (rho * v * v) / (bc * factorDrag);
-
-            let ax = -drag * (vx/v);
-            let ay = -g - drag * (vy/v);
-
-            vx += ax * dt;
-            vy += ay * dt;
-
-            x += vx * dt;
-            y += vy * dt;
-
-            tiempo += dt;
-
-            datos.push({ x, y, v, t: tiempo });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo Balístico Avanzado</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 20px;
         }
 
-        return datos;
-    }
-
-    // --- Ajuste del segundo cero ---
-    let ceroDeseado = parseFloat(document.getElementById("ceroDeseado").value);
-
-    let thetaMin = 0.0;
-    let thetaMax = 0.05;
-    let theta;
-
-    for(let i=0; i<40; i++){
-
-        theta = (thetaMin + thetaMax) / 2;
-        let tray = simular(theta);
-
-        let idx = tray.findIndex(p => p.x >= ceroDeseado);
-        if(idx <= 0) continue;
-
-        let p1 = tray[idx-1];
-        let p2 = tray[idx];
-
-        let factor = (ceroDeseado - p1.x)/(p2.x - p1.x);
-        let yInterp = p1.y + factor*(p2.y - p1.y);
-
-        if(yInterp > 0) thetaMax = theta;
-        else thetaMin = theta;
-    }
-
-    let trayFinal = simular(theta);
-
-    // --- Cálculo de cruces ---
-    let primerCruce = null;
-    let segundoCruce = null;
-    let mpbr = null;
-
-    for(let i=1;i<trayFinal.length;i++){
-
-        let prev = trayFinal[i-1];
-        let curr = trayFinal[i];
-
-        if(prev.y < 0 && curr.y >= 0 && primerCruce === null){
-            let f = -prev.y/(curr.y - prev.y);
-            primerCruce = prev.x + f*(curr.x - prev.x);
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        if(prev.y > 0 && curr.y <= 0 && segundoCruce === null){
-            let f = prev.y/(prev.y - curr.y);
-            segundoCruce = prev.x + f*(curr.x - prev.x);
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
         }
 
-        if(prev.y > -zona && curr.y <= -zona && mpbr === null){
-            let f = (prev.y + zona)/(prev.y - curr.y);
-            mpbr = prev.x + f*(curr.x - prev.x);
-        }
-    }
-
-    // document.getElementById("resultado").innerHTML =
-    //     "<b>Cero configurado:</b> " + ceroDeseado.toFixed(0) + " m<br>" +
-    //     "<b>Primer cero:</b> " + (primerCruce ? primerCruce.toFixed(0) : "-") + " m<br>" +
-    //     "<b>Segundo cero real:</b> " + (segundoCruce ? segundoCruce.toFixed(0) : "-") + " m<br>" +
-    //     "<b>MPBR (±" + (zona*100) + " cm):</b> " + (mpbr ? mpbr.toFixed(0) : "-") + " m";
-    document.getElementById("resultado").innerHTML =
-    "<b>Cero configurado:</b> " + ceroDeseado.toFixed(0) + " m<br>" +
-    "<b>Primer cero:</b> " + (primerCruce ? primerCruce.toFixed(0) : "-") + " m<br>" +
-    "<b>Segundo cero real:</b> " + (segundoCruce ? segundoCruce.toFixed(0) : "-") + " m<br>" +
-    "<b>MPBR (±" + (zona*100) + " cm):</b> " + (mpbr ? mpbr.toFixed(0) : "-") + " m" +
-
-    "<div class='mensaje-guia' style='margin-top:15px; padding:10px; background:#f5f8fc; border:1px solid #d6e2f3; border-radius:6px; font-size:13px;'>"+
-    "▶ Haga clic en una fila de la tabla para mostrar la simulación de tiro."+
-    "</div>";
-    // --- TABLA ---
-    const tbody = document.querySelector("#tabla tbody");
-    tbody.innerHTML = "";
-    const velAnimal = parseFloat(document.getElementById("velAnimal").value);
-    const angulo = parseFloat(document.getElementById("anguloAnimal").value);
-    const rad = angulo * Math.PI / 180;
-    for(let d=0; d<=300; d+=25){
-
-        let punto;
-
-        if(d === 0){
-            punto = trayFinal[0];
-        } else {
-
-            let idx = trayFinal.findIndex(p => p.x >= d);
-            if(idx <= 0) continue;
-
-            let p1 = trayFinal[idx-1];
-            let p2 = trayFinal[idx];
-
-            let f = (d - p1.x)/(p2.x - p1.x);
-
-            punto = {
-                x: d,
-                y: p1.y + f*(p2.y - p1.y),
-                v: p1.v + f*(p2.v - p1.v),
-                t: p1.t + f*(p2.t - p1.t)
-            };
+        button {
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
         }
 
-        let distanciaGeometrica = Math.abs(Math.cos(beta)) < 0.0001
-        ? "-"
-        : d / Math.cos(beta);
+        /* ===== BOTONES ===== */
 
-        let deriva_cm = viento * punto.t * 100;
-        let caida_cm = punto.y * 100;
-        let energia = 0.5 * masa * punto.v * punto.v;
-        let tReal = tiempoHastaIntercepcion(d, velAnimal, rad, trayFinal);
-	    let distanciaEfectiva = d + velAnimal * Math.sin(rad) * tReal;
-        let adelanto_cm = velAnimal * tReal * Math.cos(rad) * 100;
-        let alturaTerreno = d * Math.tan(beta);
-        let deltaLongitudinal = velAnimal * Math.sin(rad) * tReal;
-        let deltaAltura = deltaLongitudinal * Math.tan(beta);
-        let alturaAnimal = alturaTerreno + deltaAltura;
-        let clicksVertical = "-";
-        let clicksHorizontal = "-";
+        .btn-principal {
+            width: 100%;
+            padding: 14px;
+            background: #1565c0;
+            color: white;
+            font-size: 16px;
+        }
 
-        if(d !== 0){
+        .btn-principal:hover {
+            background: #0d47a1;
+        }
 
-            let anguloVertical, anguloHorizontal;
+        .btn-secundario {
+            background: #546e7a;
+            color: white;
+            padding: 8px 14px;
+            font-size: 14px;
+            width: auto;
+        }
 
-            if(sistema === "mrad"){
-                anguloVertical = -caida_cm / (d * 0.1);
-                anguloHorizontal = deriva_cm / (d * 0.1);
-            } else { // MOA
-                anguloVertical = (-caida_cm / (d * 0.0291));
-                anguloHorizontal = (deriva_cm / (d * 0.0291));
+        .btn-secundario:hover {
+            background: #37474f;
+        }
+
+        .btn-disparar {
+            margin-top: 15px;
+            padding: 12px 20px;
+            background: #2e7d32;
+            color: white;
+            font-size: 15px;
+            border-radius: 6px;
+        }
+
+        .btn-disparar:hover {
+            background: #1b5e20;
+        }
+
+        .btn-peligro {
+            background: #c62828;
+            color: white;
+            padding: 8px 14px;
+            font-size: 14px;
+            width: auto;
+        }
+
+        .btn-peligro:hover {
+            background: #8e0000;
+        }
+
+        .btn-restablecer {
+            width: 100%;
+            padding: 12px;
+            background: #607d8b;
+            color: white;
+            font-size: 15px;
+            margin-top: 15px;
+        }
+
+        .btn-restablecer:hover {
+            background: #455a64;
+        }
+
+        .zona-disparo {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .btn-disparar {
+            padding: 14px 28px;
+            background: #2e7d32;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .btn-disparar:hover {
+            background: #1b5e20;
+        }
+
+        /* ===== RESULTADOS ===== */
+
+        .result {
+            margin-top: 25px;
+            padding: 18px;
+            background: #f1f5fb;
+            border-left: 4px solid #1565c0;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+
+        /* ===== TABLA ===== */
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        /* ===== SELECCIÓN DE FILAS ===== */
+
+        tr:hover {
+            background: #f1f5fb;
+            cursor: pointer;
+        }
+
+        tr.seleccionada {
+            background: #dbe9ff !important;
+            font-weight: 600;
+        }
+
+        /* ===== PANEL PERFILES ===== */
+
+        .panel-perfiles {
+            background: #f4f6f9;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 25px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .panel-perfiles h3 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .perfil-linea {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        #selectorPerfil {
+            padding: 8px;
+            min-width: 220px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .mensaje-guia {
+            margin-top: 15px;
+            padding: 10px 14px;
+            background: #f5f8fc;
+            border: 1px solid #d6e2f3;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #444;
+        }
+
+
+        .tabla-contenedor {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: auto;
+        }
+
+        /* ===== RESPONSIVE ===== */
+
+        @media (max-width: 768px) {
+
+            .container {
+                padding: 15px;
             }
 
-            clicksVertical = (anguloVertical / valorClick).toFixed(1);
-            clicksHorizontal = (anguloHorizontal / valorClick).toFixed(1);
+            input {
+                font-size: 16px;
+                /* evita zoom automático en iPhone */
+            }
+
+            .perfil-linea {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #selectorPerfil {
+                width: 100%;
+            }
+
+            .btn-secundario,
+            .btn-peligro {
+                width: 100%;
+            }
+
+            .btn-disparar {
+                width: 100%;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th,
+            td {
+                padding: 4px;
+            }
+
         }
 
-    tbody.innerHTML += `
-    <tr onclick="simularDistancia(this, {
-        distancia: ${d},
-        alturaCm: ${-Math.round(caida_cm)},
-        adelantoCm: ${Math.round(adelanto_cm)}
-    })" style="cursor:pointer;">
+
+        .btn-abrir {
+            background: linear-gradient(135deg, #ff7a18, #ff3c00);
+            color: white;
+            border: none;
+            padding: 14px 26px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            margin: 25px auto;
+            display: block;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            transition: all 0.25s ease;
+        }
+
+        .btn-abrir:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn-abrir:active {
+            transform: translateY(1px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <label><b>Cartucho:</b></label>
+        <input type="text" id="cartucho" value="Winchester Extreme Point 30-06 180gr"
+            style="width: 300px; margin-bottom:10px;">
+        <h2>Modelo Balístico Completo</h2>
+        <h3 id="tituloCartucho" style="margin-top:20px; color:#2c3e50;"></h3>
+        <label>BC (G1)</label>
+        <input id="bc" type="number" step="0.001" value="0.422">
+
+        <label>Factor de calibración:</label>
+        <input type="number" id="factorDrag" value="3000">
+
+        <label>Velocidad inicial (m/s)</label>
+        <input id="v0" type="number" value="838">
+
+        <label>Altitud (m)</label>
+        <input id="alt" type="number" value="1000">
+
+        <label>Zona vital (diámetro en cm)</label>
+        <input id="zona" type="number" value="15">
+
+        <label>Viento lateral (m/s)</label>
+        <input id="viento" type="number" value="4">
+
+        <label>Velocidad del animal (m/s)</label>
+        <input id="velAnimal" type="number" value="8">
+
+        <label>Pendiente terreno (°)</label>
+        <input id="pendiente" type="number" value="0">
+
+        <label>Ángulo animal (°)</label>
+        <input id="anguloAnimal" type="number" value="0">
+
+        <label>Sistema de torreta</label>
+        <select id="sistema">
+            <option value="mrad">MRAD</option>
+            <option value="moa">MOA</option>
+        </select>
+
+        <label>Valor por click</label>
+        <input id="valorClick" type="number" step="0.01" value="0.1">
+
+        <label>Peso del proyectil (grains)</label>
+        <input id="peso" type="number" value="180">
+
+        <label>Segundo cero deseado (m)</label>
+        <input id="ceroDeseado" type="number" value="200">
+
+        <div class="panel-perfiles">
+
+            <h3>Gestión de perfiles</h3>
+
+            <div class="perfil-linea">
+                <select id="selectorPerfil"></select>
+
+                <button class="btn-secundario" onclick="guardarPerfil()">
+                    Guardar
+                </button>
+
+                <button class="btn-secundario" onclick="cargarPerfil()">
+                    Cargar
+                </button>
+
+                <button class="btn-peligro" onclick="eliminarPerfil()">
+                    Eliminar
+                </button>
+            </div>
+
+        </div>
+
+
+        <button class="btn-principal" onclick="calcular()">
+            Calcular
+        </button>
+
+
+        <div class="result" id="resultado"></div>
+
+        <button class="btn-restablecer" onclick="restablecerValores()">
+            Restablecer valores iniciales
+        </button>
+
+        <div class="tabla-contenedor">
+            <table id="tabla">
+                <thead>
+                    <tr>
+                        <th>Dist. hor (m)</th>
+                        <th>Dist. geométrica (m)</th>
+                        <th>Vel (m/s)</th>
+                        <th>Energía (J)</th>
+                        <th>Tray (cm)</th>
+                        <th>Viento (cm)</th>
+                        <th>Adelanto (cm)</th>
+                        <th>Dist. efectiva (m)</th>
+                        <th>Tiempo (s)</th>
+                        <th>Clicks ↑ (0.1 mrad)</th>
+                        <th>Clicks → (0.1 mrad)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <canvas id="simulacion" width="900" height="400"></canvas>
+
+        <div style="margin:20px 0; text-align:center;">
+            <label><strong>Aumento visor (x)</strong></label><br>
+
+            <input type="range" id="zoom" min="1" max="12" step="1" value="6" style="width:300px;">
+
+            <span id="zoomValor">6x</span>
+        </div>
+
+        <div class="zona-disparo">
+            <button class="btn-disparar" onclick="disparar()">
+                Disparar
+            </button>
+        </div>
+
+        <div id="panelImpacto" class="panel-impacto">
+            <h3>Datos del disparo</h3>
+            <div id="datosImpacto">Sin disparo</div>
+        </div>
+
+        <canvas id="grafica" width="900" height="300" style="margin-top:30px;border:1px solid #ccc;">
+        </canvas>
+
+    </div>
+
+    <button class="btn-abrir" onclick="abrirSimulador()">
+        🎮 Abrir simulación dinámica
+    </button>
+
+    <script>
+
+        function densidadAire(alt) {
+            const rho0 = 1.225;
+            return rho0 * Math.exp(-alt / 8500);
+        }
+
+        // ✅ VARIABLES GLOBALES 
+        let trayGlobal = null;
+        let betaGlobal = null;
+        let velAnimalGlobal = null;
+        let radGlobal = null;
+        let ultimaSimulacion = null;
+        let ultimaFila = null;
+        let impactoX = null;
+        let impactoY = null;
+        let hierba = [];
+        let vientoOffset = 0;
+        let mostrarImpacto = false;
+        let factorVelocidad = 1; // 1 = normal, 0.5 = lenta, 0.2 = súper lenta
+        let fondo = new Image();
+        fondo.src = "fondo.png";
+        let fondoCargado = false; // 👈 importante
+        fondo.onload = function () {
+            fondoCargado = true;
+            requestAnimationFrame(animar);
+        };
+        let lineaSuelo = 0;
+        const zoomSlider = document.getElementById("zoom");
+        const zoomValor = document.getElementById("zoomValor");
+        let zonaVitalCm = 15;
+
+        zoomSlider.addEventListener("input", function () {
+            zoomValor.textContent = this.value + "x";
+            if (ultimaSimulacion) {
+                dibujarEscenaBalistica(ultimaSimulacion);
+            }
+        });
+
+        function actualizarZonaVital() {
+            const valor = parseFloat(document.getElementById("zona").value);
+            zonaVitalCm = isNaN(valor) ? 15 : valor;
+        }
+
+
+
+
+        let imagenesListas = true;
+        function tiempoHastaDistancia(d, tray) {
+
+            for (let i = 1; i < tray.length; i++) {
+
+                let p1 = tray[i - 1];
+                let p2 = tray[i];
+
+                if (p2.x >= d) {
+
+                    let f = (d - p1.x) / (p2.x - p1.x);
+
+                    return p1.t + f * (p2.t - p1.t);
+                }
+            }
+
+            return null; // por seguridad
+        }
+
+        function tiempoHastaIntercepcion(d, velAnimal, rad, tray) {
+
+            let t = tiempoHastaDistancia(d, tray);
+
+            for (let i = 0; i < 3; i++) {
+
+                let dNueva = d + velAnimal * Math.sin(rad) * t;
+
+                t = tiempoHastaDistancia(dNueva, tray);
+            }
+
+            return t;
+        }
+
+        function calcularBalistica(dSim) {
+
+            if (!trayGlobal) return;
+
+            let idx = trayGlobal.findIndex(p => p.x >= dSim);
+            if (idx <= 0) return;
+
+            let p1 = trayGlobal[idx - 1];
+            let p2 = trayGlobal[idx];
+
+            let f = (dSim - p1.x) / (p2.x - p1.x);
+
+            let punto = {
+                x: dSim,
+                y: p1.y + f * (p2.y - p1.y),
+                v: p1.v + f * (p2.v - p1.v),
+                t: p1.t + f * (p2.t - p1.t)
+            };
+
+            let tReal = tiempoHastaIntercepcion(
+                dSim,
+                velAnimalGlobal,
+                radGlobal,
+                trayGlobal
+            );
+
+            let distanciaEfectiva = dSim + velAnimalGlobal * Math.sin(radGlobal) * tReal;
+
+            let alturaTerreno = dSim * Math.tan(betaGlobal);
+            let deltaLong = velAnimalGlobal * Math.sin(radGlobal) * tReal;
+            let deltaAltura = deltaLong * Math.tan(betaGlobal);
+            let alturaAnimal = alturaTerreno + deltaAltura;
+
+            let adelantoCm = deltaLong * 100;
+            let alturaCm = (punto.y - alturaAnimal) * 100;
+
+            const datos = {
+                distancia: dSim,
+                adelantoCm,
+                alturaCm
+            };
+
+            //console.log(datos);
+
+            dibujarEscenaBalistica(datos);
+        }
+
+        function calcular() {
+            const nombreCartucho = document.getElementById("cartucho").value;
+            const bc = parseFloat(document.getElementById("bc").value);
+            const v0 = parseFloat(document.getElementById("v0").value);
+            const alt = parseFloat(document.getElementById("alt").value);
+            const zona = parseFloat(document.getElementById("zona").value) / 100;
+            const viento = parseFloat(document.getElementById("viento").value);
+            const sistema = document.getElementById("sistema").value;
+            const valorClick = parseFloat(document.getElementById("valorClick").value);
+            const pendiente = parseFloat(document.getElementById("pendiente").value);
+            const beta = pendiente * Math.PI / 180;
+            const pesoGrains = parseFloat(document.getElementById("peso").value);
+            const masa = pesoGrains * 0.00006479891;
+
+            const rho = densidadAire(alt);
+            const g = 9.81;
+            const visorAltura = 0.038;
+            const dt = 0.0005;
+            const factorDrag = parseFloat(document.getElementById("factorDrag").value);
+
+            document.getElementById("tituloCartucho").innerHTML =
+                "Tabla balística – " + nombreCartucho;
+            document.getElementById("tituloCartucho").innerHTML =
+                "Tabla balística – <b>" + nombreCartucho + "</b>" +
+                "<br><span style='font-size:14px; color:#555;'>"
+                + "BC (G1): " + bc +
+                " | V0: " + v0 +
+                " m/s | Factor: " + factorDrag +
+                "</span>";
+
+            function simular(theta) {
+                let x = 0;
+                let y = -visorAltura;
+
+                let vx = v0 * Math.cos(theta);
+                let vy = v0 * Math.sin(theta);
+
+                let tiempo = 0;
+                let datos = [];
+
+                while (x <= 500 && y > -2) {
+
+                    let v = Math.sqrt(vx * vx + vy * vy);
+                    const factorDrag = parseFloat(document.getElementById("factorDrag").value);
+                    let drag = (rho * v * v) / (bc * factorDrag);
+
+                    let ax = -drag * (vx / v);
+                    let ay = -g - drag * (vy / v);
+
+                    vx += ax * dt;
+                    vy += ay * dt;
+
+                    x += vx * dt;
+                    y += vy * dt;
+
+                    tiempo += dt;
+
+                    datos.push({ x, y, v, t: tiempo });
+                }
+
+                return datos;
+            }
+
+            // --- Ajuste del segundo cero ---
+            let ceroDeseado = parseFloat(document.getElementById("ceroDeseado").value);
+
+            let thetaMin = 0.0;
+            let thetaMax = 0.05;
+            let theta;
+
+            for (let i = 0; i < 40; i++) {
+
+                theta = (thetaMin + thetaMax) / 2;
+                let tray = simular(theta);
+
+                let idx = tray.findIndex(p => p.x >= ceroDeseado);
+                if (idx <= 0) continue;
+
+                let p1 = tray[idx - 1];
+                let p2 = tray[idx];
+
+                let factor = (ceroDeseado - p1.x) / (p2.x - p1.x);
+                let yInterp = p1.y + factor * (p2.y - p1.y);
+
+                if (yInterp > 0) thetaMax = theta;
+                else thetaMin = theta;
+            }
+
+            let trayFinal = simular(theta);
+
+            // --- Cálculo de cruces ---
+            let primerCruce = null;
+            let segundoCruce = null;
+            let mpbr = null;
+
+            for (let i = 1; i < trayFinal.length; i++) {
+
+                let prev = trayFinal[i - 1];
+                let curr = trayFinal[i];
+
+                if (prev.y < 0 && curr.y >= 0 && primerCruce === null) {
+                    let f = -prev.y / (curr.y - prev.y);
+                    primerCruce = prev.x + f * (curr.x - prev.x);
+                }
+
+                if (prev.y > 0 && curr.y <= 0 && segundoCruce === null) {
+                    let f = prev.y / (prev.y - curr.y);
+                    segundoCruce = prev.x + f * (curr.x - prev.x);
+                }
+
+                if (prev.y > -zona && curr.y <= -zona && mpbr === null) {
+                    let f = (prev.y + zona) / (prev.y - curr.y);
+                    mpbr = prev.x + f * (curr.x - prev.x);
+                }
+            }
+
+            document.getElementById("resultado").innerHTML =
+                "<b>Cero configurado:</b> " + ceroDeseado.toFixed(0) + " m<br>" +
+                "<b>Primer cero:</b> " + (primerCruce ? primerCruce.toFixed(0) : "-") + " m<br>" +
+                "<b>Segundo cero real:</b> " + (segundoCruce ? segundoCruce.toFixed(0) : "-") + " m<br>" +
+                "<b>MPBR (±" + (zona * 100) + " cm):</b> " + (mpbr ? mpbr.toFixed(0) : "-") + " m" +
+
+                "<div class='mensaje-guia' style='margin-top:15px; padding:10px; background:#f5f8fc; border:1px solid #d6e2f3; border-radius:6px; font-size:13px;'>" +
+                "▶ Haga clic en una fila de la tabla para mostrar la simulación de tiro." +
+                "</div>";
+            // --- TABLA ---
+            const tbody = document.querySelector("#tabla tbody");
+            tbody.innerHTML = "";
+            const velAnimal = parseFloat(document.getElementById("velAnimal").value);
+            const angulo = parseFloat(document.getElementById("anguloAnimal").value);
+            const rad = angulo * Math.PI / 180;
+            for (let d = 0; d <= 300; d += 25) {
+
+                let punto;
+
+                if (d === 0) {
+                    punto = trayFinal[0];
+                } else {
+
+                    let idx = trayFinal.findIndex(p => p.x >= d);
+                    if (idx <= 0) continue;
+
+                    let p1 = trayFinal[idx - 1];
+                    let p2 = trayFinal[idx];
+
+                    let f = (d - p1.x) / (p2.x - p1.x);
+
+                    punto = {
+                        x: d,
+                        y: p1.y + f * (p2.y - p1.y),
+                        v: p1.v + f * (p2.v - p1.v),
+                        t: p1.t + f * (p2.t - p1.t)
+                    };
+                }
+
+                let distanciaGeometrica = Math.abs(Math.cos(beta)) < 0.0001
+                    ? "-"
+                    : d / Math.cos(beta);
+
+                let deriva_cm = viento * punto.t * 100;
+                let caida_cm = punto.y * 100;
+                let energia = 0.5 * masa * punto.v * punto.v;
+                let tReal = tiempoHastaIntercepcion(d, velAnimal, rad, trayFinal);
+                let distanciaEfectiva = d + velAnimal * Math.sin(rad) * tReal;
+                let adelanto_cm = velAnimal * tReal * Math.cos(rad) * 100;
+                let alturaTerreno = d * Math.tan(beta);
+                let deltaLongitudinal = velAnimal * Math.sin(rad) * tReal;
+                let deltaAltura = deltaLongitudinal * Math.tan(beta);
+                let alturaAnimal = alturaTerreno + deltaAltura;
+                let clicksVertical = "-";
+                let clicksHorizontal = "-";
+
+                if (d !== 0) {
+
+                    let anguloVertical, anguloHorizontal;
+
+                    if (sistema === "mrad") {
+                        anguloVertical = -caida_cm / (d * 0.1);
+                        anguloHorizontal = deriva_cm / (d * 0.1);
+                    } else { // MOA
+                        anguloVertical = (-caida_cm / (d * 0.0291));
+                        anguloHorizontal = (deriva_cm / (d * 0.0291));
+                    }
+
+                    clicksVertical = (anguloVertical / valorClick).toFixed(1);
+                    clicksHorizontal = (anguloHorizontal / valorClick).toFixed(1);
+                }
+
+                tbody.innerHTML += `
+        <tr onclick="simularDistancia(this, {
+            distancia: ${d},
+            alturaCm: ${-Math.round(caida_cm)},
+            adelantoCm: ${Math.round(adelanto_cm)}
+        })" style="cursor:pointer;">
 
         <td>${d}</td>
         <td>${distanciaGeometrica.toFixed(2)}</td>
@@ -728,1047 +760,1047 @@ function calcular(){
         <td>${clicksHorizontal}</td>
 
     </tr>
-    `;        
+    `;
+            }
+
+            // Guardar datos globales para simulación
+            trayGlobal = trayFinal;
+            betaGlobal = beta;
+            velAnimalGlobal = velAnimal;
+            radGlobal = rad;
+            dibujarGrafica(trayFinal, zona);
+
         }
 
-// Guardar datos globales para simulación
-    trayGlobal = trayFinal;
-    betaGlobal = beta;
-    velAnimalGlobal = velAnimal;
-    radGlobal = rad;
-    dibujarGrafica(trayFinal, zona);
 
-}
+        function simularDistancia(fila) {
 
+            if (!fila) return;   // 🔥 protección
 
-    function simularDistancia(fila) {
+            document.querySelectorAll("table tr").forEach(tr => {
+                tr.classList.remove("seleccionada");
+            });
 
-        if (!fila) return;   // 🔥 protección
+            fila.classList.add("seleccionada");
+            ultimaFila = fila;
 
-        document.querySelectorAll("table tr").forEach(tr => {
-            tr.classList.remove("seleccionada");
-        });
+            const celdas = fila.querySelectorAll("td");
 
-        fila.classList.add("seleccionada");
-        ultimaFila = fila;
+            const datos = {
+                distancia: parseFloat(celdas[0].innerText),
+                velocidad: parseFloat(celdas[2].innerText),
+                alturaCm: parseFloat(celdas[4].innerText),
+                adelantoCm: parseFloat(celdas[6].innerText),
+                tiempoVuelo: parseFloat(celdas[8].innerText)
+            };
 
-        const celdas = fila.querySelectorAll("td");
+            //console.log("Datos desde tabla:", datos);
 
-        const datos = {
-            distancia: parseFloat(celdas[0].innerText),
-            velocidad: parseFloat(celdas[2].innerText),
-            alturaCm: parseFloat(celdas[4].innerText),
-            adelantoCm: parseFloat(celdas[6].innerText),
-            tiempoVuelo: parseFloat(celdas[8].innerText)
-        }; 
-        
-        //console.log("Datos desde tabla:", datos);
+            ultimaSimulacion = datos;
 
-        ultimaSimulacion = datos;
-
-        dibujarEscenaBalistica(datos);
-    }
-
-    function dibujarGrafica(trayectoria, zona){
-
-        const canvas = document.getElementById("grafica");
-        const ctx = canvas.getContext("2d");
-
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-
-        const margen = 50;
-        const ancho = canvas.width - margen*2;
-        const alto = canvas.height - margen*2;
-
-        const maxDist = 300;
-
-        // Autoescala vertical según trayectoria real
-        let ys = trayectoria
-            .filter(p=>p.x<=maxDist)
-            .map(p=>p.y);
-
-        const maxAltura = Math.max(...ys) + 0.02;
-        const minAltura = Math.min(...ys) - 0.02;
-
-        function escalaX(x){
-            return margen + (x/maxDist)*ancho;
+            dibujarEscenaBalistica(datos);
         }
 
-        function escalaY(y){
-            return margen + alto - ((y-minAltura)/(maxAltura-minAltura))*alto;
-        }
+        function dibujarGrafica(trayectoria, zona) {
 
-        // --- CUADRÍCULA ---
-        ctx.strokeStyle="#eee";
-        ctx.lineWidth=1;
+            const canvas = document.getElementById("grafica");
+            const ctx = canvas.getContext("2d");
 
-        for(let d=0; d<=maxDist; d+=50){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const margen = 50;
+            const ancho = canvas.width - margen * 2;
+            const alto = canvas.height - margen * 2;
+
+            const maxDist = 300;
+
+            // Autoescala vertical según trayectoria real
+            let ys = trayectoria
+                .filter(p => p.x <= maxDist)
+                .map(p => p.y);
+
+            const maxAltura = Math.max(...ys) + 0.02;
+            const minAltura = Math.min(...ys) - 0.02;
+
+            function escalaX(x) {
+                return margen + (x / maxDist) * ancho;
+            }
+
+            function escalaY(y) {
+                return margen + alto - ((y - minAltura) / (maxAltura - minAltura)) * alto;
+            }
+
+            // --- CUADRÍCULA ---
+            ctx.strokeStyle = "#eee";
+            ctx.lineWidth = 1;
+
+            for (let d = 0; d <= maxDist; d += 50) {
+                ctx.beginPath();
+                ctx.moveTo(escalaX(d), margen);
+                ctx.lineTo(escalaX(d), margen + alto);
+                ctx.stroke();
+            }
+
+            for (let h = Math.floor(minAltura * 100 / 5) * 5; h <= maxAltura * 100; h += 5) {
+                ctx.beginPath();
+                ctx.moveTo(margen, escalaY(h / 100));
+                ctx.lineTo(margen + ancho, escalaY(h / 100));
+                ctx.stroke();
+            }
+
+            // --- ZONA VITAL (banda suave) ---
+            ctx.fillStyle = "rgba(0,150,0,0.08)";
+            ctx.fillRect(
+                margen,
+                escalaY(zona),
+                ancho,
+                escalaY(-zona) - escalaY(zona)
+            );
+
+            // --- LÍNEA DE MIRA ---
+            ctx.strokeStyle = "#444";
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(escalaX(d), margen);
-            ctx.lineTo(escalaX(d), margen+alto);
+            ctx.moveTo(escalaX(0), escalaY(0));
+            ctx.lineTo(escalaX(maxDist), escalaY(0));
+            ctx.stroke();
+
+            // --- TRAYECTORIA ---
+            ctx.strokeStyle = "#e74c3c";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            let primero = true;
+
+            trayectoria.forEach(p => {
+                if (p.x <= maxDist) {
+                    if (primero) {
+                        ctx.moveTo(escalaX(p.x), escalaY(p.y));
+                        primero = false;
+                    } else {
+                        ctx.lineTo(escalaX(p.x), escalaY(p.y));
+                    }
+                }
+            });
+
+            ctx.stroke();
+
+            // --- EJES ---
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1.5;
+
+            // eje vertical
+            ctx.beginPath();
+            ctx.moveTo(margen, margen);
+            ctx.lineTo(margen, margen + alto);
+            ctx.stroke();
+
+            // eje horizontal inferior
+            ctx.beginPath();
+            ctx.moveTo(margen, margen + alto);
+            ctx.lineTo(margen + ancho, margen + alto);
+            ctx.stroke();
+
+            // --- ETIQUETAS DISTANCIA ---
+            ctx.fillStyle = "#000";
+            ctx.font = "12px Arial";
+
+            for (let d = 0; d <= maxDist; d += 50) {
+                ctx.fillText(d + " m", escalaX(d) - 15, margen + alto + 20);
+            }
+
+            // --- ETIQUETAS ALTURA ---
+            for (let h = Math.floor(minAltura * 100 / 5) * 5; h <= maxAltura * 100; h += 5) {
+                ctx.fillText(h + " cm", margen - 40, escalaY(h / 100) + 4);
+            }
+
+            // --- TÍTULO ---
+            ctx.font = "bold 14px Arial";
+            ctx.fillText("Trayectoria balística", margen, 25);
+
+        }
+
+
+        function generarHierba(canvas, horizonteY) {
+
+            hierba = [];
+
+            for (let i = 0; i < 2500; i++) {
+
+                const x = Math.random() * canvas.width * 3 - canvas.width;
+                const y = horizonteY + Math.random() * (canvas.height - horizonteY);
+
+                const profundidad = (y - horizonteY) / (canvas.height - horizonteY);
+
+                hierba.push({
+                    x: x,
+                    y: y,
+                    altura: 3 + profundidad * 18,
+                    inclinacion: (Math.random() - 0.5) * 3,
+                    tono: 35 + Math.random() * 60,
+                    alpha: 0.25 + profundidad * 0.55,
+                    grosor: 0.4 + profundidad * 1.8
+                });
+            }
+        }
+
+
+
+        function dibujarEscenaBalistica(datos, tiempoFisico = 0) {
+
+            if (!imagenesListas) return;
+
+            const canvas = document.getElementById("simulacion");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centroX = canvas.width / 2;
+            const centroY = canvas.height / 2;
+
+            const aumento = parseFloat(document.getElementById("zoom").value);
+            const zoom = aumento / 6;
+            const distancia = datos.distancia;
+
+            const campoVertical1x = 250;
+            const campoVertical = campoVertical1x / aumento;
+            const pxPorMrad = canvas.height / campoVertical;
+
+            function cmToPixel(cm) {
+                const anguloMrad = (cm / (distancia * 100)) * 1000;
+                return anguloMrad * pxPorMrad;
+            }
+
+            const radio = canvas.height * 0.38;
+
+            // ==============================
+            // ZOOM DEL MUNDO COMPLETO
+            // ==============================
+
+            ctx.save();
+            ctx.translate(centroX, centroY);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-centroX, -centroY);
+
+            // ==============================
+            // FONDO
+            // ==============================
+
+            const horizonteY = centroY - radio * 0.4;
+            if (hierba.length === 0) {
+                generarHierba(canvas, horizonteY);
+            }
+
+
+            const gradCielo = ctx.createLinearGradient(0, 0, 0, horizonteY);
+            gradCielo.addColorStop(0, "#7fc4ff");
+            gradCielo.addColorStop(1, "#e0f4ff");
+
+            ctx.fillStyle = gradCielo;
+            ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 3, horizonteY + canvas.height);
+
+            //ctx.fillStyle = "#7bbf35";
+            //ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
+
+
+            // ==============================
+            // SUELO CON PROFUNDIDAD
+            // ==============================
+
+            const gradSuelo = ctx.createLinearGradient(
+                0,
+                horizonteY,
+                0,
+                canvas.height
+            );
+
+            gradSuelo.addColorStop(0, "#6cad2f");
+            gradSuelo.addColorStop(1, "#2f5d14");
+
+            ctx.fillStyle = gradSuelo;
+            ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
+            // ==============================
+            // HIERBA GLOBAL ESTABLE
+            // ==============================
+
+            if (hierba.length === 0) {
+                generarHierba(canvas, horizonteY);
+            }
+
+            ctx.fillStyle = "#5f8f2a";
+            ctx.beginPath();
+            ctx.moveTo(-canvas.width, horizonteY);
+            ctx.lineTo(canvas.width * 0.25, horizonteY - 80);
+            ctx.lineTo(canvas.width * 0.5, horizonteY);
+            ctx.lineTo(canvas.width * 0.75, horizonteY - 60);
+            ctx.lineTo(canvas.width * 2, horizonteY);
+            ctx.closePath();
+            ctx.fill();
+
+            // ==============================
+            // BALÍSTICA
+            // ==============================
+
+            const rojoX = centroX;
+            const rojoY = centroY;
+
+            const caidaCm = -datos.alturaCm;
+            const baseY = centroY + cmToPixel(caidaCm);
+
+            const vAnimal = parseFloat(document.getElementById("velAnimal").value);
+            const anguloAnimal = parseFloat(document.getElementById("anguloAnimal").value) * Math.PI / 180;
+
+            const adelantoM = -datos.adelantoCm / 100;
+            const xAnimalM = adelantoM + vAnimal * Math.cos(anguloAnimal) * tiempoFisico;
+            const desplazamientoX = cmToPixel(xAnimalM * 100);
+
+            const alturaRealCm = 75;
+            const altoPx = cmToPixel(alturaRealCm);
+            const anchoPx = altoPx * 1.6;
+
+            const offsetVitalX = anchoPx * 0.15;
+
+            const animalX = centroX - offsetVitalX + desplazamientoX;
+            const animalY = baseY;
+
+
+
+            // ==============================
+            // HIERBA REALISTA
+            // ==============================
+
+
+            for (let brizna of hierba) {
+
+                // Evitar dibujar hierba debajo del animal
+                const dentroX = Math.abs(brizna.x - animalX) < anchoPx * 0.5;
+                const dentroY = brizna.y > animalY - altoPx * 0.2 &&
+                    brizna.y < animalY + altoPx * 0.6;
+
+                if (dentroX && dentroY) continue;
+
+                ctx.strokeStyle = `rgba(20, ${brizna.tono}, 10, ${brizna.alpha})`;
+                ctx.lineWidth = brizna.grosor;
+
+                ctx.beginPath();
+                ctx.moveTo(brizna.x, brizna.y);
+                ctx.lineTo(brizna.x + brizna.inclinacion, brizna.y - brizna.altura);
+                ctx.stroke();
+            }
+
+
+
+            // ==============================
+            // SOMBRA EN EL SUELO
+            // ==============================
+
+            ctx.fillStyle = "rgba(0,0,0,0.25)";
+            ctx.beginPath();
+            ctx.ellipse(
+                animalX,
+                animalY + altoPx * 0.45,
+                anchoPx * 0.45,
+                altoPx * 0.18,
+                0,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+
+            // ==============================
+            // CUERPO
+            // ==============================
+
+            ctx.fillStyle = "#5a3e36";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+
+            // ctx.beginPath();
+            // ctx.ellipse(animalX, animalY, anchoPx / 2, altoPx / 2, 0, 0, Math.PI * 2);
+            // ctx.fill();
+            // ctx.stroke();
+            ctx.beginPath();
+
+            // Parte trasera
+            ctx.moveTo(animalX - anchoPx * 0.5, animalY);
+
+            ctx.quadraticCurveTo(
+                animalX - anchoPx * 0.25,
+                animalY - altoPx * 0.85,
+                animalX + anchoPx * 0.25,
+                animalY - altoPx * 0.4
+            );
+
+            // Hombro hacia cabeza
+            ctx.quadraticCurveTo(
+                animalX + anchoPx * 0.55,
+                animalY - altoPx * 0.15,
+                animalX + anchoPx * 0.5,
+                animalY + altoPx * 0.05
+            );
+
+            // Barriga
+            ctx.quadraticCurveTo(
+                animalX + anchoPx * 0.3,
+                animalY + altoPx * 0.55,
+                animalX - anchoPx * 0.4,
+                animalY + altoPx * 0.45
+            );
+
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // ==============================
+            // PATAS
+            // ==============================
+
+            ctx.fillStyle = "#3b2621";
+
+            const pataAncho = anchoPx * 0.12;
+            const pataAlto = altoPx * 0.65;
+            const basePatasY = animalY + altoPx * 0.35;
+
+            // trasera
+            ctx.fillRect(
+                animalX - anchoPx * 0.30,
+                basePatasY,
+                pataAncho,
+                pataAlto
+            );
+
+            // delantera
+            ctx.fillRect(
+                animalX + anchoPx * 0.05,
+                basePatasY,
+                pataAncho,
+                pataAlto
+            );
+
+            ctx.fillStyle = "#4a2f28";
+
+            ctx.beginPath();
+            ctx.moveTo(animalX + anchoPx * 0.15, animalY - altoPx * 0.25);
+            ctx.lineTo(animalX + anchoPx * 0.45, animalY - altoPx * 0.15);
+            ctx.lineTo(animalX + anchoPx * 0.35, animalY + altoPx * 0.15);
+            ctx.lineTo(animalX + anchoPx * 0.1, animalY + altoPx * 0.05);
+            ctx.closePath();
+            ctx.fill();
+
+
+            // ==============================
+            // CABEZA
+            // ==============================
+
+            const cabezaRadio = altoPx * 0.25;
+            const cabezaX = animalX + anchoPx * 0.45;
+            const cabezaY = animalY - altoPx * 0.15;
+
+            ctx.beginPath();
+            ctx.ellipse(
+                cabezaX,
+                cabezaY,
+                cabezaRadio * 1.5,
+                cabezaRadio * 0.65,
+                0,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            ctx.stroke();
+
+            // Hocico
+            ctx.fillStyle = "#2b1a15";
+            ctx.beginPath();
+            ctx.ellipse(
+                cabezaX + cabezaRadio * 0.9,
+                cabezaY + cabezaRadio * 0.2,
+                cabezaRadio * 0.5,
+                cabezaRadio * 0.35,
+                0,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+            // Oreja
+            ctx.fillStyle = "#3a231c";
+            ctx.beginPath();
+            ctx.moveTo(
+                cabezaX - cabezaRadio * 0.4,
+                cabezaY - cabezaRadio * 0.7
+            );
+            ctx.lineTo(
+                cabezaX - cabezaRadio * 0.8,
+                cabezaY - cabezaRadio * 1.4
+            );
+            ctx.lineTo(
+                cabezaX + cabezaRadio * 0.2,
+                cabezaY - cabezaRadio * 1.1
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            // ==============================
+            // COLMILLOS
+            // ==============================
+
+            ctx.fillStyle = "#f5f2e8";   // blanco marfil
+            ctx.strokeStyle = "#cfc9b8";
+            ctx.lineWidth = 1;
+
+            // Colmillo superior visible
+            ctx.beginPath();
+            ctx.moveTo(
+                cabezaX + cabezaRadio * 1.1,
+                cabezaY + cabezaRadio * 0.2
+            );
+
+            ctx.quadraticCurveTo(
+                cabezaX + cabezaRadio * 1.35,
+                cabezaY + cabezaRadio * 0.05,
+                cabezaX + cabezaRadio * 1.2,
+                cabezaY + cabezaRadio * 0.35
+            );
+
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+
+            // ==============================
+            // RABO
+            // ==============================
+
+            ctx.strokeStyle = "#2b1a16";
+            ctx.lineWidth = anchoPx * 0.015;
+            ctx.lineCap = "round";
+
+            ctx.beginPath();
+
+            // Inicio en parte trasera alta
+            ctx.moveTo(
+                animalX - anchoPx * 0.48,
+                animalY - altoPx * 0.1
+            );
+
+            // Curva hacia arriba
+            ctx.quadraticCurveTo(
+                animalX - anchoPx * 0.65,
+                animalY - altoPx * 0.45,
+                animalX - anchoPx * 0.55,
+                animalY - altoPx * 0.6
+            );
+
+            ctx.stroke();
+
+
+            // Mechón final
+            ctx.fillStyle = "#1c110d";
+            ctx.beginPath();
+            ctx.arc(
+                animalX - anchoPx * 0.55,
+                animalY - altoPx * 0.6,
+                anchoPx * 0.025,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+            // ==============================
+            // ZONA VITAL
+            // ==============================
+
+
+            // const vitalAncho = cmToPixel(50);
+            // const vitalAlto = cmToPixel(45);
+
+            const vitalAncho = cmToPixel(zonaVitalCm * 4);
+            const vitalAlto = cmToPixel(zonaVitalCm * 3);
+
+
+            const vitalX = animalX + offsetVitalX;
+            const vitalY = animalY + altoPx * 0.05;
+
+            ctx.fillStyle = "rgba(255,220,220,0.5)";
+            ctx.strokeStyle = "darkred";
+
+            ctx.beginPath();
+            ctx.ellipse(vitalX, vitalY, vitalAncho / 2, vitalAlto / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // ==============================
+            // IMPACTO AZUL
+            // ==============================
+
+            if (mostrarImpacto) {
+
+                ctx.beginPath();
+                ctx.arc(vitalX, vitalY, 2, 0, Math.PI * 2);
+                ctx.fillStyle = "#00BFFF";
+                ctx.fill();
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "blue";
+                ctx.stroke();
+            }
+
+            ctx.restore(); // quitar zoom
+
+            // ==============================
+            // VIÑETEADO SUAVE (HÍBRIDO)
+            // ==============================
+
+            const gradVigneta = ctx.createRadialGradient(
+                centroX, centroY, radio * 0.75,
+                centroX, centroY, radio * 1.4
+            );
+
+            gradVigneta.addColorStop(0, "rgba(0,0,0,0)");
+            gradVigneta.addColorStop(1, "rgba(0,0,0,0.55)");
+
+            ctx.fillStyle = gradVigneta;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // ==============================
+            // BORDE DEL VISOR
+            // ==============================
+
+            ctx.lineWidth = 18;
+            ctx.strokeStyle = "#222";
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // ==============================
+            // CRUZ
+            // ==============================
+
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(centroX - radio, centroY);
+            ctx.lineTo(centroX + radio, centroY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centroX, centroY - radio);
+            ctx.lineTo(centroX, centroY + radio);
+            ctx.stroke();
+
+            // Punto rojo
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            // ==============================
+            // PROFUNDIDAD INTERNA DEL TUBO
+            // ==============================
+
+            const gradTubo = ctx.createRadialGradient(
+                centroX,
+                centroY,
+                radio * 0.65,
+                centroX,
+                centroY,
+                radio
+            );
+
+            gradTubo.addColorStop(0, "rgba(0,0,0,0)");
+            gradTubo.addColorStop(1, "rgba(0,0,0,0.85)");
+
+            ctx.fillStyle = gradTubo;
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            // ==============================
+            // REFLEJO DE CRISTAL
+            // ==============================
+
+            const gradCristal = ctx.createRadialGradient(
+                centroX - radio * 0.35,
+                centroY - radio * 0.45,
+                0,
+                centroX,
+                centroY,
+                radio
+            );
+
+            gradCristal.addColorStop(0, "rgba(255,255,255,0.25)");
+            gradCristal.addColorStop(1, "rgba(255,255,255,0)");
+
+            ctx.fillStyle = gradCristal;
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, radio * 0.95, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            // ==============================
+            // BORDE METÁLICO MATE
+            // ==============================
+
+            ctx.lineWidth = 22;
+            ctx.strokeStyle = "#111";
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+            ctx.stroke();
+
+
+            // ==============================
+            // BORDE INTERNO MÁS OSCURO
+            // ==============================
+
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = "#000";
+            ctx.beginPath();
+            ctx.arc(centroX, centroY, radio - 10, 0, Math.PI * 2);
             ctx.stroke();
         }
 
-        for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
-            ctx.beginPath();
-            ctx.moveTo(margen, escalaY(h/100));
-            ctx.lineTo(margen+ancho, escalaY(h/100));
-            ctx.stroke();
-        }
+        function dibujarSimulacion(trayFinal, d, beta, alturaAnimal, distanciaEfectiva, tReal) {
 
-        // --- ZONA VITAL (banda suave) ---
-        ctx.fillStyle="rgba(0,150,0,0.08)";
-        ctx.fillRect(
-            margen,
-            escalaY(zona),
-            ancho,
-            escalaY(-zona)-escalaY(zona)
-        );
+            const canvas = document.getElementById("simulacion");
+            const ctx = canvas.getContext("2d");
 
-        // --- LÍNEA DE MIRA ---
-        ctx.strokeStyle="#444";
-        ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.moveTo(escalaX(0), escalaY(0));
-        ctx.lineTo(escalaX(maxDist), escalaY(0));
-        ctx.stroke();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // --- TRAYECTORIA ---
-        ctx.strokeStyle="#e74c3c";
-        ctx.lineWidth=2.5;
-        ctx.beginPath();
+            const escalaX = canvas.width / (d * 1.2);
+            // Buscar altura máxima real en la trayectoria
+            let maxY = 0;
 
-        let primero=true;
-
-        trayectoria.forEach(p=>{
-            if(p.x<=maxDist){
-                if(primero){
-                    ctx.moveTo(escalaX(p.x), escalaY(p.y));
-                    primero=false;
-                } else {
-                    ctx.lineTo(escalaX(p.x), escalaY(p.y));
+            for (let i = 0; i < trayFinal.length; i++) {
+                if (trayFinal[i].y > maxY) {
+                    maxY = trayFinal[i].y;
                 }
             }
-        });
 
-        ctx.stroke();
+            // También considerar la altura del terreno y animal
+            const alturaTerrenoFinal = d * Math.tan(beta);
+            maxY = Math.max(maxY, alturaTerrenoFinal, alturaAnimal);
 
-        // --- EJES ---
-        ctx.strokeStyle="#000";
-        ctx.lineWidth=1.5;
+            // Añadir margen visual
+            maxY *= 1.2;
 
-        // eje vertical
-        ctx.beginPath();
-        ctx.moveTo(margen, margen);
-        ctx.lineTo(margen, margen+alto);
-        ctx.stroke();
-
-        // eje horizontal inferior
-        ctx.beginPath();
-        ctx.moveTo(margen, margen+alto);
-        ctx.lineTo(margen+ancho, margen+alto);
-        ctx.stroke();
-
-        // --- ETIQUETAS DISTANCIA ---
-        ctx.fillStyle="#000";
-        ctx.font="12px Arial";
-
-        for(let d=0; d<=maxDist; d+=50){
-            ctx.fillText(d+" m", escalaX(d)-15, margen+alto+20);
-        }
-
-        // --- ETIQUETAS ALTURA ---
-        for(let h=Math.floor(minAltura*100/5)*5; h<=maxAltura*100; h+=5){
-            ctx.fillText(h+" cm", margen-40, escalaY(h/100)+4);
-        }
-
-        // --- TÍTULO ---
-        ctx.font="bold 14px Arial";
-        ctx.fillText("Trayectoria balística", margen, 25);
-
-    }
-
-
-function generarHierba(canvas, horizonteY) {
-
-    hierba = [];
-
-    for (let i = 0; i < 2500; i++) {
-
-        const x = Math.random() * canvas.width * 3 - canvas.width;
-        const y = horizonteY + Math.random() * (canvas.height - horizonteY);
-
-        const profundidad = (y - horizonteY) / (canvas.height - horizonteY);
-
-        hierba.push({
-            x: x,
-            y: y,
-            altura: 3 + profundidad * 18,
-            inclinacion: (Math.random() - 0.5) * 3,
-            tono: 35 + Math.random() * 60,
-            alpha: 0.25 + profundidad * 0.55,
-            grosor: 0.4 + profundidad * 1.8
-        });
-    }
-}
-
-
-
-function dibujarEscenaBalistica(datos, tiempoFisico = 0) {
-
-    if (!imagenesListas) return;
-
-    const canvas = document.getElementById("simulacion");
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const centroX = canvas.width / 2;
-    const centroY = canvas.height / 2;
-
-    const aumento = parseFloat(document.getElementById("zoom").value);
-    const zoom = aumento / 6;
-    const distancia = datos.distancia;
-
-    const campoVertical1x = 250;
-    const campoVertical = campoVertical1x / aumento;
-    const pxPorMrad = canvas.height / campoVertical;
-
-    function cmToPixel(cm) {
-        const anguloMrad = (cm / (distancia * 100)) * 1000;
-        return anguloMrad * pxPorMrad;
-    }
-
-    const radio = canvas.height * 0.38;
-
-    // ==============================
-    // ZOOM DEL MUNDO COMPLETO
-    // ==============================
-
-    ctx.save();
-    ctx.translate(centroX, centroY);
-    ctx.scale(zoom, zoom);
-    ctx.translate(-centroX, -centroY);
-
-    // ==============================
-    // FONDO
-    // ==============================
-
-    const horizonteY = centroY - radio * 0.4;
-    if (hierba.length === 0) {
-        generarHierba(canvas, horizonteY);
-    }
-
-
-    const gradCielo = ctx.createLinearGradient(0, 0, 0, horizonteY);
-    gradCielo.addColorStop(0, "#7fc4ff");
-    gradCielo.addColorStop(1, "#e0f4ff");
-
-    ctx.fillStyle = gradCielo;
-    ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 3, horizonteY + canvas.height);
-
-    //ctx.fillStyle = "#7bbf35";
-    //ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
-
-
-// ==============================
-// SUELO CON PROFUNDIDAD
-// ==============================
-
-const gradSuelo = ctx.createLinearGradient(
-    0,
-    horizonteY,
-    0,
-    canvas.height
-);
-
-gradSuelo.addColorStop(0, "#6cad2f");
-gradSuelo.addColorStop(1, "#2f5d14");
-
-ctx.fillStyle = gradSuelo;
-ctx.fillRect(-canvas.width, horizonteY, canvas.width * 3, canvas.height * 3);
-// ==============================
-// HIERBA GLOBAL ESTABLE
-// ==============================
-
-if (hierba.length === 0) {
-    generarHierba(canvas, horizonteY);
-}
-
-
-
-    ctx.fillStyle = "#5f8f2a";
-    ctx.beginPath();
-    ctx.moveTo(-canvas.width, horizonteY);
-    ctx.lineTo(canvas.width * 0.25, horizonteY - 80);
-    ctx.lineTo(canvas.width * 0.5, horizonteY);
-    ctx.lineTo(canvas.width * 0.75, horizonteY - 60);
-    ctx.lineTo(canvas.width * 2, horizonteY);
-    ctx.closePath();
-    ctx.fill();
-
-    // ==============================
-    // BALÍSTICA
-    // ==============================
-
-    const rojoX = centroX;
-    const rojoY = centroY;
-
-    const caidaCm = -datos.alturaCm;
-    const baseY = centroY + cmToPixel(caidaCm);
-
-    const vAnimal = parseFloat(document.getElementById("velAnimal").value);
-    const anguloAnimal = parseFloat(document.getElementById("anguloAnimal").value) * Math.PI / 180;
-
-    const adelantoM = -datos.adelantoCm / 100;
-    const xAnimalM = adelantoM + vAnimal * Math.cos(anguloAnimal) * tiempoFisico;
-    const desplazamientoX = cmToPixel(xAnimalM * 100);
-
-    const alturaRealCm = 75;
-    const altoPx = cmToPixel(alturaRealCm);
-    const anchoPx = altoPx * 1.6;
-
-    const offsetVitalX = anchoPx * 0.15;
-
-    const animalX = centroX - offsetVitalX + desplazamientoX;
-    const animalY = baseY;
-
-
-
-// ==============================
-// HIERBA REALISTA
-// ==============================
-
-
-    for (let brizna of hierba) {
-
-        // Evitar dibujar hierba debajo del animal
-        const dentroX = Math.abs(brizna.x - animalX) < anchoPx * 0.5;
-        const dentroY = brizna.y > animalY - altoPx * 0.2 &&
-                        brizna.y < animalY + altoPx * 0.6;
-
-        if (dentroX && dentroY) continue;
-
-        ctx.strokeStyle = `rgba(20, ${brizna.tono}, 10, ${brizna.alpha})`;
-        ctx.lineWidth = brizna.grosor;
-
-        ctx.beginPath();
-        ctx.moveTo(brizna.x, brizna.y);
-        ctx.lineTo(brizna.x + brizna.inclinacion, brizna.y - brizna.altura);
-        ctx.stroke();
-    }
-
-
-
-// ==============================
-// SOMBRA EN EL SUELO
-// ==============================
-
-ctx.fillStyle = "rgba(0,0,0,0.25)";
-ctx.beginPath();
-ctx.ellipse(
-    animalX,
-    animalY + altoPx * 0.45,
-    anchoPx * 0.45,
-    altoPx * 0.18,
-    0,
-    0,
-    Math.PI * 2
-);
-ctx.fill();
-
-
-// ==============================
-// CUERPO
-// ==============================
-
-ctx.fillStyle = "#5a3e36";
-ctx.strokeStyle = "black";
-ctx.lineWidth = 2;
-
-// ctx.beginPath();
-// ctx.ellipse(animalX, animalY, anchoPx / 2, altoPx / 2, 0, 0, Math.PI * 2);
-// ctx.fill();
-// ctx.stroke();
-ctx.beginPath();
-
-// Parte trasera
-ctx.moveTo(animalX - anchoPx * 0.5, animalY);
-
-ctx.quadraticCurveTo(
-    animalX - anchoPx * 0.25,
-    animalY - altoPx * 0.85,
-    animalX + anchoPx * 0.25,
-    animalY - altoPx * 0.4
-);
-
-// Hombro hacia cabeza
-ctx.quadraticCurveTo(
-    animalX + anchoPx * 0.55,
-    animalY - altoPx * 0.15,
-    animalX + anchoPx * 0.5,
-    animalY + altoPx * 0.05
-);
-
-// Barriga
-ctx.quadraticCurveTo(
-    animalX + anchoPx * 0.3,
-    animalY + altoPx * 0.55,
-    animalX - anchoPx * 0.4,
-    animalY + altoPx * 0.45
-);
-
-ctx.closePath();
-ctx.fill();
-ctx.stroke();
-
-// ==============================
-// PATAS
-// ==============================
-
-ctx.fillStyle = "#3b2621";
-
-const pataAncho = anchoPx * 0.12;
-const pataAlto = altoPx * 0.65;
-const basePatasY = animalY + altoPx * 0.35;
-
-// trasera
-ctx.fillRect(
-    animalX - anchoPx * 0.30,
-    basePatasY,
-    pataAncho,
-    pataAlto
-);
-
-// delantera
-ctx.fillRect(
-    animalX + anchoPx * 0.05,
-    basePatasY,
-    pataAncho,
-    pataAlto
-);
-
-ctx.fillStyle = "#4a2f28";
-
-ctx.beginPath();
-ctx.moveTo(animalX + anchoPx * 0.15, animalY - altoPx * 0.25);
-ctx.lineTo(animalX + anchoPx * 0.45, animalY - altoPx * 0.15);
-ctx.lineTo(animalX + anchoPx * 0.35, animalY + altoPx * 0.15);
-ctx.lineTo(animalX + anchoPx * 0.1, animalY + altoPx * 0.05);
-ctx.closePath();
-ctx.fill();
-
-
-// ==============================
-// CABEZA
-// ==============================
-
-const cabezaRadio = altoPx * 0.25;
-const cabezaX = animalX + anchoPx * 0.45;
-const cabezaY = animalY - altoPx * 0.15;
-
-ctx.beginPath();
-ctx.ellipse(
-    cabezaX,
-    cabezaY,
-    cabezaRadio * 1.5,
-    cabezaRadio * 0.65,
-    0,
-    0,
-    Math.PI * 2
-);
-ctx.fill();
-ctx.stroke();
-
-// Hocico
-ctx.fillStyle = "#2b1a15";
-ctx.beginPath();
-ctx.ellipse(
-    cabezaX + cabezaRadio * 0.9,
-    cabezaY + cabezaRadio * 0.2,
-    cabezaRadio * 0.5,
-    cabezaRadio * 0.35,
-    0,
-    0,
-    Math.PI * 2
-);
-ctx.fill();
-
-// Oreja
-ctx.fillStyle = "#3a231c";
-ctx.beginPath();
-ctx.moveTo(
-    cabezaX - cabezaRadio * 0.4,
-    cabezaY - cabezaRadio * 0.7
-);
-ctx.lineTo(
-    cabezaX - cabezaRadio * 0.8,
-    cabezaY - cabezaRadio * 1.4
-);
-ctx.lineTo(
-    cabezaX + cabezaRadio * 0.2,
-    cabezaY - cabezaRadio * 1.1
-);
-ctx.closePath();
-ctx.fill();
-
-// ==============================
-// COLMILLOS
-// ==============================
-
-ctx.fillStyle = "#f5f2e8";   // blanco marfil
-ctx.strokeStyle = "#cfc9b8";
-ctx.lineWidth = 1;
-
-// Colmillo superior visible
-ctx.beginPath();
-ctx.moveTo(
-    cabezaX + cabezaRadio * 1.1,
-    cabezaY + cabezaRadio * 0.2
-);
-
-ctx.quadraticCurveTo(
-    cabezaX + cabezaRadio * 1.35,
-    cabezaY + cabezaRadio * 0.05,
-    cabezaX + cabezaRadio * 1.2,
-    cabezaY + cabezaRadio * 0.35
-);
-
-ctx.closePath();
-ctx.fill();
-ctx.stroke();
-
-
-// ==============================
-// RABO
-// ==============================
-
-ctx.strokeStyle = "#2b1a16";
-ctx.lineWidth = anchoPx * 0.015;
-ctx.lineCap = "round";
-
-ctx.beginPath();
-
-// Inicio en parte trasera alta
-ctx.moveTo(
-    animalX - anchoPx * 0.48,
-    animalY - altoPx * 0.1
-);
-
-// Curva hacia arriba
-ctx.quadraticCurveTo(
-    animalX - anchoPx * 0.65,
-    animalY - altoPx * 0.45,
-    animalX - anchoPx * 0.55,
-    animalY - altoPx * 0.6
-);
-
-ctx.stroke();
-
-
-// Mechón final
-ctx.fillStyle = "#1c110d";
-ctx.beginPath();
-ctx.arc(
-    animalX - anchoPx * 0.55,
-    animalY - altoPx * 0.6,
-    anchoPx * 0.025,
-    0,
-    Math.PI * 2
-);
-ctx.fill();
-
-// ==============================
-// ZONA VITAL
-// ==============================
-
-// const vitalAncho = cmToPixel(40);
-// const vitalAlto = cmToPixel(35);
-
-const vitalAncho = cmToPixel(50);
-const vitalAlto = cmToPixel(45);
-
-const vitalX = animalX + offsetVitalX;
-const vitalY = animalY + altoPx * 0.05;
-
-ctx.fillStyle = "rgba(255,220,0,0.5)";
-ctx.strokeStyle = "darkred";
-
-ctx.beginPath();
-ctx.ellipse(vitalX, vitalY, vitalAncho / 2, vitalAlto / 2, 0, 0, Math.PI * 2);
-ctx.fill();
-ctx.stroke();
-
-// ==============================
-// IMPACTO AZUL
-// ==============================
-
-if (mostrarImpacto) {
-
-    ctx.beginPath();
-    ctx.arc(vitalX, vitalY, 2, 0, Math.PI * 2);
-    ctx.fillStyle = "#00BFFF";
-    ctx.fill();
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "blue";
-    ctx.stroke();
-}
-
-    ctx.restore(); // quitar zoom
-
-    // ==============================
-    // VIÑETEADO SUAVE (HÍBRIDO)
-    // ==============================
-
-    const gradVigneta = ctx.createRadialGradient(
-        centroX, centroY, radio * 0.75,
-        centroX, centroY, radio * 1.4
-    );
-
-    gradVigneta.addColorStop(0, "rgba(0,0,0,0)");
-    gradVigneta.addColorStop(1, "rgba(0,0,0,0.55)");
-
-    ctx.fillStyle = gradVigneta;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // ==============================
-    // BORDE DEL VISOR
-    // ==============================
-
-    ctx.lineWidth = 18;
-    ctx.strokeStyle = "#222";
-    ctx.beginPath();
-    ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // ==============================
-    // CRUZ
-    // ==============================
-
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-    ctx.moveTo(centroX - radio, centroY);
-    ctx.lineTo(centroX + radio, centroY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(centroX, centroY - radio);
-    ctx.lineTo(centroX, centroY + radio);
-    ctx.stroke();
-
-    // Punto rojo
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(centroX, centroY, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-
-// ==============================
-// PROFUNDIDAD INTERNA DEL TUBO
-// ==============================
-
-const gradTubo = ctx.createRadialGradient(
-    centroX,
-    centroY,
-    radio * 0.65,
-    centroX,
-    centroY,
-    radio
-);
-
-gradTubo.addColorStop(0, "rgba(0,0,0,0)");
-gradTubo.addColorStop(1, "rgba(0,0,0,0.85)");
-
-ctx.fillStyle = gradTubo;
-ctx.beginPath();
-ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
-ctx.fill();
-
-
-// ==============================
-// REFLEJO DE CRISTAL
-// ==============================
-
-const gradCristal = ctx.createRadialGradient(
-    centroX - radio * 0.35,
-    centroY - radio * 0.45,
-    0,
-    centroX,
-    centroY,
-    radio
-);
-
-gradCristal.addColorStop(0, "rgba(255,255,255,0.25)");
-gradCristal.addColorStop(1, "rgba(255,255,255,0)");
-
-ctx.fillStyle = gradCristal;
-ctx.beginPath();
-ctx.arc(centroX, centroY, radio * 0.95, 0, Math.PI * 2);
-ctx.fill();
-
-
-// ==============================
-// BORDE METÁLICO MATE
-// ==============================
-
-ctx.lineWidth = 22;
-ctx.strokeStyle = "#111";
-ctx.beginPath();
-ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
-ctx.stroke();
-
-
-// ==============================
-// BORDE INTERNO MÁS OSCURO
-// ==============================
-
-ctx.lineWidth = 6;
-ctx.strokeStyle = "#000";
-ctx.beginPath();
-ctx.arc(centroX, centroY, radio - 10, 0, Math.PI * 2);
-ctx.stroke();
-}
-
-    function dibujarSimulacion(trayFinal, d, beta, alturaAnimal, distanciaEfectiva, tReal) {
-
-        const canvas = document.getElementById("simulacion");
-        const ctx = canvas.getContext("2d");
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const escalaX = canvas.width / (d * 1.2);
-        // Buscar altura máxima real en la trayectoria
-        let maxY = 0;
-
-        for (let i = 0; i < trayFinal.length; i++) {
-            if (trayFinal[i].y > maxY) {
-                maxY = trayFinal[i].y;
-            }
-        }
-
-        // También considerar la altura del terreno y animal
-        const alturaTerrenoFinal = d * Math.tan(beta);
-        maxY = Math.max(maxY, alturaTerrenoFinal, alturaAnimal);
-
-        // Añadir margen visual
-        maxY *= 1.2;
-
-         // Calcular escala vertical inteligente
-        const escalaY = (canvas.height - 100) / maxY;
+            // Calcular escala vertical inteligente
+            const escalaY = (canvas.height - 100) / maxY;
             const origenX = 50;
             const origenY = canvas.height - 50;
 
-        // ==============================
-        // 1️⃣ Dibujar terreno
-        // ==============================
+            // ==============================
+            // 1️⃣ Dibujar terreno
+            // ==============================
 
-        const alturaTerreno = d * Math.tan(beta);
-
-        ctx.beginPath();
-        ctx.moveTo(origenX, origenY);
-        ctx.lineTo(
-            origenX + d * escalaX,
-            origenY - alturaTerreno * escalaY
-        );
-        ctx.strokeStyle = "green";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // ==============================
-        // 2️⃣ Dibujar trayectoria REAL
-        // ==============================
-
-        ctx.beginPath();
-        ctx.strokeStyle = "blue";
-        ctx.lineWidth = 1.5;
-
-        for (let i = 0; i < trayFinal.length; i++) {
-
-            let punto = trayFinal[i];
-
-            let px = origenX + punto.x * escalaX;
-            let py = origenY - punto.y * escalaY;
-
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-
-        ctx.stroke();
-
-        // ==============================
-        // 3️⃣ Dibujar animal
-        // ==============================
-
-        const pxAnimalX = origenX + distanciaEfectiva * escalaX;
-        const pxAnimalY = origenY - alturaAnimal * escalaY;
-
-        ctx.beginPath();
-        ctx.arc(pxAnimalX, pxAnimalY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "red";
-        ctx.fill();
-
-        // ==============================
-        // 4️⃣ Dibujar punto de impacto
-        // ==============================
-
-        let impacto = trayFinal.find(p => p.t >= tReal);
-
-        if (impacto) {
-
-            let pxImpactoX = origenX + impacto.x * escalaX;
-            let pxImpactoY = origenY - impacto.y * escalaY;
+            const alturaTerreno = d * Math.tan(beta);
 
             ctx.beginPath();
-            ctx.arc(pxImpactoX, pxImpactoY, 5, 0, Math.PI * 2);
-            ctx.fillStyle = "orange";
+            ctx.moveTo(origenX, origenY);
+            ctx.lineTo(
+                origenX + d * escalaX,
+                origenY - alturaTerreno * escalaY
+            );
+            ctx.strokeStyle = "green";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // ==============================
+            // 2️⃣ Dibujar trayectoria REAL
+            // ==============================
+
+            ctx.beginPath();
+            ctx.strokeStyle = "blue";
+            ctx.lineWidth = 1.5;
+
+            for (let i = 0; i < trayFinal.length; i++) {
+
+                let punto = trayFinal[i];
+
+                let px = origenX + punto.x * escalaX;
+                let py = origenY - punto.y * escalaY;
+
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+
+            ctx.stroke();
+
+            // ==============================
+            // 3️⃣ Dibujar animal
+            // ==============================
+
+            const pxAnimalX = origenX + distanciaEfectiva * escalaX;
+            const pxAnimalY = origenY - alturaAnimal * escalaY;
+
+            ctx.beginPath();
+            ctx.arc(pxAnimalX, pxAnimalY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+
+            // ==============================
+            // 4️⃣ Dibujar punto de impacto
+            // ==============================
+
+            let impacto = trayFinal.find(p => p.t >= tReal);
+
+            if (impacto) {
+
+                let pxImpactoX = origenX + impacto.x * escalaX;
+                let pxImpactoY = origenY - impacto.y * escalaY;
+
+                ctx.beginPath();
+                ctx.arc(pxImpactoX, pxImpactoY, 5, 0, Math.PI * 2);
+                ctx.fillStyle = "orange";
+                ctx.fill();
+            }
+
+            // ==============================
+            // 5️⃣ Dibujar tirador
+            // ==============================
+
+            ctx.beginPath();
+            ctx.arc(origenX, origenY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = "black";
             ctx.fill();
         }
+        let animando = false;
 
-        // ==============================
-        // 5️⃣ Dibujar tirador
-        // ==============================
+        function disparar() {
 
-        ctx.beginPath();
-        ctx.arc(origenX, origenY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "black";
-        ctx.fill();
-    }
-    let animando = false;
+            if (!ultimaSimulacion || animando) return;
 
-    function disparar() {
+            animando = true;
 
-        if (!ultimaSimulacion || animando) return;
+            mostrarImpacto = false;
+            impactoX = null;
+            impactoY = null;
 
-        animando = true;
+            const tiempoVuelo = ultimaSimulacion.tiempoVuelo;
+            const duracionVisual = 2000;
 
-        mostrarImpacto = false;
-        impactoX = null;
-        impactoY = null;
+            const inicio = performance.now();
 
-        const tiempoVuelo = ultimaSimulacion.tiempoVuelo;
-        const duracionVisual = 2000;
+            function animar(t) {
 
-        const inicio = performance.now();
+                let transcurrido = t - inicio;
+                let progreso = transcurrido / duracionVisual;
+                if (progreso > 1) progreso = 1;
 
-        function animar(t) {
+                let tiempoFisico = progreso * tiempoVuelo;
 
-            let transcurrido = t - inicio;
-            let progreso = transcurrido / duracionVisual;
-            if (progreso > 1) progreso = 1;
+                dibujarEscenaBalistica(ultimaSimulacion, tiempoFisico);
 
-            let tiempoFisico = progreso * tiempoVuelo;
+                if (progreso < 1) {
+                    requestAnimationFrame(animar);
+                } else {
+                    animando = false;
 
-            dibujarEscenaBalistica(ultimaSimulacion, tiempoFisico);
+                    // ACTIVAR IMPACTO
+                    mostrarImpacto = true;
 
-            if (progreso < 1) {
-                requestAnimationFrame(animar);
-            } else {
-                animando = false;
+                    actualizarPanel(ultimaSimulacion);
 
-                // ACTIVAR IMPACTO
-                mostrarImpacto = true;
-
-                actualizarPanel(ultimaSimulacion);
-
-                // Redibujar una vez más para mostrar impacto
-                dibujarEscenaBalistica(ultimaSimulacion, tiempoVuelo);
+                    // Redibujar una vez más para mostrar impacto
+                    dibujarEscenaBalistica(ultimaSimulacion, tiempoVuelo);
+                }
             }
+
+            requestAnimationFrame(animar);
         }
 
-        requestAnimationFrame(animar);
-    }
+        function actualizarPanel(datos) {
 
-function actualizarPanel(datos) {
+            const panel = document.getElementById("datosImpacto");
 
-    const panel = document.getElementById("datosImpacto");
+            if (!datos) {
+                panel.innerHTML = "Sin disparo";
+                return;
+            }
 
-    if (!datos) {
-        panel.innerHTML = "Sin disparo";
-        return;
-    }
-
-    panel.innerHTML = `
+            panel.innerHTML = `
         Distancia: ${datos.distancia.toFixed(0)} m<br>
         Tiempo de vuelo: ${datos.tiempoVuelo.toFixed(3)} s<br>
         Caída vertical: ${datos.alturaCm.toFixed(2)} cm<br>
         Adelanto necesario: ${datos.adelantoCm.toFixed(2)} cm<br>
         Velocidad restante: ${datos.velocidad.toFixed(1)} m/s
     `;
-}
+        }
 
-function restablecerValores() {
-    if (confirm("¿Restablecer valores originales?")) {
+        function restablecerValores() {
+            if (confirm("¿Restablecer valores originales?")) {
 
-        Object.keys(valoresIniciales).forEach(id => {
-            document.getElementById(id).value = valoresIniciales[id];
-            localStorage.removeItem(id);
-        });
+                Object.keys(valoresIniciales).forEach(id => {
+                    document.getElementById(id).value = valoresIniciales[id];
+                    localStorage.removeItem(id);
+                });
 
-        location.reload();
-    }
-}
+                location.reload();
+            }
+        }
 
-</script>
-<hr style="margin-top:40px;">
+    </script>
+    <hr style="margin-top:40px;">
 
-<!-- <div style="text-align:right; font-size:12px; color:#777;">
+    <!-- <div style="text-align:right; font-size:12px; color:#777;">
     © 2026 Fco. Díez – Calculadora Balística Personal
 </div> -->
 
 
-<script>
+    <script>
 
-const valoresIniciales = {
-    cartucho: "Winchester Extreme Point 30-06 180gr",
-    bc: 0.422,
-    factorDrag: 3000,
-    v0: 838,
-    alt: 1000,
-    zona: 4,
-    viento: 4,
-    velAnimal: 8,
-    pendiente: 0,
-    anguloAnimal: 0,
-    sistema: "mrad",
-    valorClick: 0.1,
-    peso: 180,
-    ceroDeseado: 200
-};
+        const valoresIniciales = {
+            cartucho: "Winchester Extreme Point 30-06 180gr",
+            bc: 0.422,
+            factorDrag: 3000,
+            v0: 838,
+            alt: 1000,
+            zona: 15,
+            viento: 4,
+            velAnimal: 8,
+            pendiente: 0,
+            anguloAnimal: 0,
+            sistema: "mrad",
+            valorClick: 0.1,
+            peso: 180,
+            ceroDeseado: 200
+        };
 
-const campos = Object.keys(valoresIniciales);
-const selector = document.getElementById("selectorPerfil");
+        const campos = Object.keys(valoresIniciales);
+        const selector = document.getElementById("selectorPerfil");
 
 
-// ===== CARGA INICIAL =====
-window.addEventListener("load", () => {
+        // ===== CARGA INICIAL =====
+        window.addEventListener("load", () => {
 
-    actualizarListaPerfiles();
+            actualizarListaPerfiles();
 
-    const ultimoPerfil = localStorage.getItem("perfilActivo");
+            const ultimoPerfil = localStorage.getItem("perfilActivo");
 
-    if (ultimoPerfil) {
-        selector.value = ultimoPerfil;
-        cargarPerfil();
-    } else {
-        Object.keys(valoresIniciales).forEach(id => {
-            document.getElementById(id).value = valoresIniciales[id];
+            if (ultimoPerfil) {
+                selector.value = ultimoPerfil;
+                cargarPerfil();
+            } else {
+                Object.keys(valoresIniciales).forEach(id => {
+                    document.getElementById(id).value = valoresIniciales[id];
+                });
+            }
         });
-    }
-});
 
 
-// ===== GUARDAR PERFIL =====
-function guardarPerfil() {
+        // ===== GUARDAR PERFIL =====
+        function guardarPerfil() {
 
-    let nombre = prompt("Nombre del perfil:");
+            let nombre = prompt("Nombre del perfil:");
 
-    if (!nombre) return;
+            if (!nombre) return;
 
-    let datos = {};
+            let datos = {};
 
-    campos.forEach(id => {
-        datos[id] = document.getElementById(id).value;
-    });
+            campos.forEach(id => {
+                datos[id] = document.getElementById(id).value;
+            });
 
-    localStorage.setItem("perfil_" + nombre, JSON.stringify(datos));
-    localStorage.setItem("perfilActivo", nombre);
+            localStorage.setItem("perfil_" + nombre, JSON.stringify(datos));
+            localStorage.setItem("perfilActivo", nombre);
 
-    actualizarListaPerfiles();
-    selector.value = nombre;
+            actualizarListaPerfiles();
+            selector.value = nombre;
 
-    alert("Perfil guardado correctamente");
-}
-
-
-// ===== CARGAR PERFIL =====
-function cargarPerfil() {
-
-    const nombre = selector.value;
-    if (!nombre) return;
-
-    const datos = JSON.parse(localStorage.getItem("perfil_" + nombre));
-    if (!datos) return;
-
-    campos.forEach(id => {
-        document.getElementById(id).value = datos[id];
-    });
-
-    localStorage.setItem("perfilActivo", nombre);
-
-    alert("Perfil cargado");
-}
-
-
-// ===== ELIMINAR PERFIL =====
-function eliminarPerfil() {
-
-    const nombre = selector.value;
-    if (!nombre) return;
-
-    if (!confirm("¿Eliminar perfil " + nombre + "?")) return;
-
-    localStorage.removeItem("perfil_" + nombre);
-    localStorage.removeItem("perfilActivo");
-
-    actualizarListaPerfiles();
-
-    alert("Perfil eliminado");
-}
-
-
-// ===== ACTUALIZAR LISTA =====
-function actualizarListaPerfiles() {
-
-    selector.innerHTML = "";
-
-    for (let i = 0; i < localStorage.length; i++) {
-
-        let clave = localStorage.key(i);
-
-        if (clave.startsWith("perfil_")) {
-
-            let nombre = clave.replace("perfil_", "");
-
-            let option = document.createElement("option");
-            option.value = nombre;
-            option.textContent = nombre;
-
-            selector.appendChild(option);
+            alert("Perfil guardado correctamente");
         }
-    }
-}
 
 
-// ===== RESTABLECER VALORES =====
-function restablecerValores() {
+        // ===== CARGAR PERFIL =====
+        function cargarPerfil() {
 
-    if (!confirm("¿Restablecer valores iniciales?")) return;
+            const nombre = selector.value;
+            if (!nombre) return;
 
-    campos.forEach(id => {
-        document.getElementById(id).value = valoresIniciales[id];
-    });
+            const datos = JSON.parse(localStorage.getItem("perfil_" + nombre));
+            if (!datos) return;
 
-    localStorage.removeItem("perfilActivo");
-}
+            campos.forEach(id => {
+                document.getElementById(id).value = datos[id];
+            });
 
-</script>
+            localStorage.setItem("perfilActivo", nombre);
 
-<script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(reg => {
-        console.log("Service Worker registrado");
-      })
-      .catch(err => {
-        console.log("Error registrando SW:", err);
-      });
-  });
-}
-</script>
-<footer style="
+            alert("Perfil cargado");
+        }
+
+
+        // ===== ELIMINAR PERFIL =====
+        function eliminarPerfil() {
+
+            const nombre = selector.value;
+            if (!nombre) return;
+
+            if (!confirm("¿Eliminar perfil " + nombre + "?")) return;
+
+            localStorage.removeItem("perfil_" + nombre);
+            localStorage.removeItem("perfilActivo");
+
+            actualizarListaPerfiles();
+
+            alert("Perfil eliminado");
+        }
+
+
+        // ===== ACTUALIZAR LISTA =====
+        function actualizarListaPerfiles() {
+
+            selector.innerHTML = "";
+
+            for (let i = 0; i < localStorage.length; i++) {
+
+                let clave = localStorage.key(i);
+
+                if (clave.startsWith("perfil_")) {
+
+                    let nombre = clave.replace("perfil_", "");
+
+                    let option = document.createElement("option");
+                    option.value = nombre;
+                    option.textContent = nombre;
+
+                    selector.appendChild(option);
+                }
+            }
+        }
+
+
+        // ===== RESTABLECER VALORES =====
+        function restablecerValores() {
+
+            if (!confirm("¿Restablecer valores iniciales?")) return;
+
+            campos.forEach(id => {
+                document.getElementById(id).value = valoresIniciales[id];
+            });
+
+            localStorage.removeItem("perfilActivo");
+        }
+
+    </script>
+
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("./service-worker.js")
+                    .then(reg => {
+                        console.log("Service Worker registrado");
+                    })
+                    .catch(err => {
+                        console.log("Error registrando SW:", err);
+                    });
+            });
+        }
+    </script>
+    <footer style="
     margin-top:40px;
     padding:20px 15px;
     background:#f4f6f8;
@@ -1777,13 +1809,560 @@ if ("serviceWorker" in navigator) {
     font-size:13px;
     color:#555;
 ">
-    © 2026 F. Díez — Calculadora Balística Personal
-    <div id="versionApp" style="margin-top:6px; font-weight:600;"></div>
-</footer>
+        © 2026 F. Díez — Calculadora Balística Personal
+        <div id="versionApp" style="margin-top:6px; font-weight:600;"></div>
+    </footer>
 
-<script>
-const APP_VERSION = "2.2";
-document.getElementById("versionApp").textContent = "Versión " + APP_VERSION;
-</script>
-</body>
-</html>
+    <script>
+        const APP_VERSION = "2.2";
+        document.getElementById("versionApp").textContent = "Versión " + APP_VERSION;
+    </script>
+
+    <script>
+
+
+        function abrirSimulador() {
+
+            const fila = document.querySelector("tr.seleccionada");
+
+            if (!fila) {
+                alert("Seleccione una fila de la tabla primero.");
+                return;
+            }
+
+            const celdas = fila.querySelectorAll("td");
+
+            const datos = {
+                distancia: parseFloat(celdas[0].textContent),
+                tiempoVuelo: parseFloat(celdas[8].textContent),
+                caidaCm: parseFloat(celdas[4].textContent),
+                adelantoCm: parseFloat(celdas[6].textContent),
+                velocidad: parseFloat(celdas[2].textContent)
+            };
+            const zonaActual = zonaVitalCm;
+            const nuevaVentana = window.open("", "_blank", "width=1000,height=600");
+            nuevaVentana.document.open();
+
+            const html = `<!DOCTYPE html>
+    <html>
+    <head>
+    <title>Simulación balística</title>
+    <style>
+body {
+    margin: 0;
+    background: #e6eef5;
+    font-family: Arial;
+    text-align: center;
+}
+
+canvas {
+    background: linear-gradient(#cfe3f5, #9fc2dd);
+    display: block;
+    margin: 20px auto;
+    border-radius: 8px;
+    touch-action: none;
+}
+
+button {
+    background: linear-gradient(135deg, #4f8cff, #2f6fe0);
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 12px auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}  
+    
+</style>
+    </head>
+    <body>
+
+
+    <div id="datosFijos" style="
+    position: fixed;
+    top: 15px;
+    right: 20px;
+    background: rgba(0,0,0,0.65);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: left;
+    line-height: 1.4;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    z-index: 1000;
+    ">
+    <strong>Datos balísticos</strong><br>
+    Distancia: ${datos.distancia} m<br>
+    Adelanto: ${datos.adelantoCm} cm<br>
+    Corrección altura: ${datos.caidaCm} cm
+    </div>
+
+
+    <h2>Simulación de disparo</h2>
+
+    <div>
+    <button onclick="toggleSlow()">🐢 Cámara lenta</button>
+    <button onclick="toggleCoords()">📍 Mostrar coords</button>
+    </div>
+
+    <canvas id="canvas" width="900" height="400"></canvas>
+    <h3 id="resultado"></h3>
+
+    <script>
+
+    const tiempoVuelo = ${datos.tiempoVuelo};
+    const caidaCm = ${datos.caidaCm};
+    const adelantoCm = ${datos.adelantoCm};
+    const zonaVitalCm = ${zonaActual};
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let animalX = 0;
+    let inicioTiempo;
+    let animando = true;
+
+    let crossX = 50;
+    let crossY = canvas.height / 2;
+
+    let balaX = null;
+    let balaY = null;
+
+    let lineaSuelo = 0;
+
+    const velocidadAnimalPx = 80;
+    let factorVelocidad = 1;
+    let mostrarCoords = false;
+
+    let estadoImpacto = null;
+    let jabaliMuerto = new Image();
+
+    let anguloCaida = 0;
+    let cayendo = false;
+
+    jabaliMuerto.src = "jabali_muerto.png";
+
+    function toggleSlow() {
+        factorVelocidad = (factorVelocidad === 1) ? 0.2 : 1;
+    }
+
+    function toggleCoords() {
+        mostrarCoords = !mostrarCoords;
+    }
+
+// Movimiento (ratón + dedo)
+canvas.addEventListener("pointermove", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    crossX = e.clientX - rect.left;
+    crossY = e.clientY - rect.top;
+});
+
+// Pulsación (ratón + dedo)
+canvas.addEventListener("pointerdown", function(e) {
+
+    const rect = canvas.getBoundingClientRect();
+    crossX = e.clientX - rect.left;
+    crossY = e.clientY - rect.top;
+
+    // BOTÓN IZQUIERDO (ratón)
+    if (e.pointerType === "mouse" && e.button === 0) {
+        disparar();
+    }
+
+    // BOTÓN DERECHO (ratón)
+    if (e.pointerType === "mouse" && e.button === 2) {
+        corregirDisparo();
+    }
+
+    // TOQUE EN MÓVIL
+    if (e.pointerType === "touch") {
+        disparar();   // en móvil el toque será disparo
+    }
+});
+    canvas.addEventListener("contextmenu", function(e) {
+        e.preventDefault();
+    });
+
+
+
+function dibujarAnimal(x) {
+
+    const y = lineaSuelo - 20;
+
+    ctx.save();
+
+    // =====================
+    // CUERPO (más alargado)
+    // =====================
+    ctx.fillStyle = "#5a3e2b";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 65, 26, -0.05, 0, Math.PI * 2);
+    ctx.fill();
+
+    // =====================
+    // CUELLO (transición suave)
+    // =====================
+    ctx.beginPath();
+    ctx.ellipse(x + 45, y - 3, 25, 18, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // =====================
+    // CABEZA
+    // =====================
+    ctx.beginPath();
+    ctx.ellipse(x + 70, y - 6, 20, 15, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // =====================
+    // HOCICO (más integrado)
+    // =====================
+    ctx.fillStyle = "#3e2a1d";
+    ctx.beginPath();
+    ctx.ellipse(x + 85, y - 4, 12, 9, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // // =====================
+    // // COLMILLO VISIBLE (único)
+    // // =====================
+    // ctx.fillStyle = "white";
+
+    // ctx.beginPath();
+    // ctx.moveTo(x + 88, y - 4);
+    // ctx.quadraticCurveTo(x + 102, y - 1, x + 94, y + 7);
+    // ctx.quadraticCurveTo(x + 96, y + 2, x + 88, y - 4);
+    // ctx.fill();
+// =====================
+// COLMILLO VISIBLE (único)
+// =====================
+ctx.fillStyle = "white";
+
+ctx.beginPath();
+ctx.moveTo(x + 87, y - 6);
+ctx.quadraticCurveTo(x + 100, y - 2, x + 92, y + 5);
+ctx.quadraticCurveTo(x + 95, y + 1, x + 87, y - 5);
+ctx.fill();
+
+// =====================
+    // OREJA (más pequeña y natural)
+    // =====================
+    ctx.fillStyle = "#4a3323";
+    ctx.beginPath();
+    ctx.moveTo(x + 60, y - 18);
+    ctx.lineTo(x + 70, y - 35);
+    ctx.lineTo(x + 75, y - 15);
+    ctx.closePath();
+    ctx.fill();
+
+    // =====================
+    // PATAS (más robustas)
+    // =====================
+    ctx.fillStyle = "#3e2a1d";
+
+    ctx.fillRect(x + 10, y + 18, 10, 40);
+    ctx.fillRect(x - 10, y + 18, 10, 40);
+    ctx.fillRect(x - 40, y + 18, 12, 40);
+    ctx.fillRect(x - 60, y + 18, 12, 40);
+
+    // =====================
+    // COLA
+    // =====================
+    ctx.strokeStyle = "#3e2a1d";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 70, y - 8);
+    ctx.lineTo(x - 85, y - 18);
+    ctx.stroke();
+
+    // =====================
+    // ZONA VITAL (ajustada)
+    // =====================
+    ctx.fillStyle = "rgba(255,0,0,0.6)";
+    ctx.beginPath();
+    //ctx.arc(x + 20, y - 2, 14, 0, Math.PI * 2);
+    ctx.arc(x + 20, y - 2, zonaVitalCm, 0, Math.PI * 2);
+
+    ctx.fill();
+
+    console.log(zonaVitalCm)
+
+
+    ctx.restore();
+}
+    function cmToPixel(cm) {
+    const escala = 3; // o el factor que estés usando
+    return cm * escala;
+}
+    
+    function dibujarVisor() {
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        ctx.moveTo(crossX - 15, crossY);
+        ctx.lineTo(crossX + 15, crossY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(crossX, crossY - 15);
+        ctx.lineTo(crossX, crossY + 15);
+        ctx.stroke();
+    }
+
+    function dibujarFondo() {
+        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, "#87b5e0");
+        grad.addColorStop(1, "#dbeaf7");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#4e7d3a";
+        ctx.fillRect(0, canvas.height * 0.65, canvas.width, canvas.height);
+
+        return canvas.height * 0.65;
+    }
+
+function animar(timestamp) {
+
+    if (!inicioTiempo) inicioTiempo = timestamp;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (animando) {
+        let tiempo = ((timestamp - inicioTiempo) / 1000) * factorVelocidad;
+        animalX = tiempo * velocidadAnimalPx;
+    }
+
+    lineaSuelo = dibujarFondo();
+
+    // // ✅ Si impacto vital → dibujar versión muerta
+    // if (estadoImpacto === "vital") {
+
+    //     dibujarAnimalMuerto(animalX);   // función nueva
+
+    // } else {
+
+    //     dibujarAnimal(animalX);         // normal
+
+    // }
+
+    // ======================
+// ======================
+// ANIMACIÓN DE CAÍDA CORREGIDA
+// ======================
+
+if (cayendo && anguloCaida < Math.PI) {
+    anguloCaida += 0.05;   // un poco más rápido
+}
+
+
+const centroX = animalX;
+const centroY = lineaSuelo - 20;
+
+ctx.save();
+
+ctx.translate(centroX, centroY);
+ctx.rotate(anguloCaida);
+ctx.translate(-centroX, -centroY);
+
+dibujarAnimal(animalX);
+
+ctx.restore();
+    dibujarVisor();
+
+    if (mostrarCoords) {
+
+        const origenX = animalX + 10;
+        const origenY = lineaSuelo - 20;
+
+        const relX = crossX - origenX;
+        const relY = origenY - crossY;
+
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+
+        ctx.fillText("Adelanto del disparo: " + Math.round(relX), crossX + 15, crossY - 10);
+        ctx.fillText("Altura: " + Math.round(relY), crossX + 15, crossY + 10);
+    }
+
+    if (balaX !== null) {
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(balaX, balaY, 6, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    // ✅ MENSAJES SI NO ES VITAL
+    if (estadoImpacto === "delante") {
+        ctx.fillStyle = "orange";
+        ctx.font = "bold 28px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
+    }
+
+    if (estadoImpacto === "detras") {
+        ctx.fillStyle = "red";
+        ctx.font = "bold 28px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
+    }
+
+    requestAnimationFrame(animar);
+}
+    function dibujarAnimalMuerto(x) {
+
+    const y = lineaSuelo - 20;
+
+    ctx.save();
+
+    // Rotar 90 grados para simular caída
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI / 2);
+
+    // Dibujar el mismo cuerpo pero rotado
+    ctx.fillStyle = "#5a3e2b";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 65, 26, -0.05, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+    function disparar() {
+
+        if (!animando) return;
+
+        animando = false;
+
+        estadoImpacto = null; // reset
+
+        balaX = crossX - adelantoCm;
+        balaY = crossY - caidaCm;
+
+        // =========================
+        // CALCULAR ZONA VITAL
+        // =========================
+
+        //const vitalAncho = cmToPixel(zonaVitalCm * 2);
+        const vitalAncho = zonaVitalCm * 2;
+        const vitalAlto  = cmToPixel(zonaVitalCm * 2);
+
+        const vitalX = animalX + 10;
+        const vitalY = lineaSuelo - 20;
+
+        const a = vitalAncho / 2;
+        const b = vitalAlto / 2;
+
+        const dx = balaX - vitalX;
+        const dy = balaY - vitalY;
+
+        const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
+
+        if (dentro) {
+            estadoImpacto = "vital";
+            cayendo = true;
+        } else if (balaX < vitalX - a) {
+            estadoImpacto = "detras";
+        } else {
+            estadoImpacto = "delante";
+        }
+
+        // =========================
+        // MENSAJE TEXTO
+        // =========================
+
+        if (estadoImpacto === "vital") {
+            document.getElementById("resultado").textContent = "IMPACTO VITAL";
+        }
+
+        if (estadoImpacto === "delante") {
+            document.getElementById("resultado").textContent = "Disparo adelantado";
+        }
+
+        if (estadoImpacto === "detras") {
+            document.getElementById("resultado").textContent = "Disparo retrasado";
+        }
+    }
+
+    //--------------------------------
+
+    function impactoEnZonaVital(x, y, cx, cy, a, b) {
+        const dx = x - cx;
+        const dy = y - cy;
+        return ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
+    }
+
+    //----------------------------------
+
+    function corregirDisparo() {
+anguloCaida = 0;
+cayendo = false;
+        balaX = null;
+        balaY = null;
+
+        document.getElementById("resultado").textContent = "";
+
+        animando = true;
+        inicioTiempo = performance.now();
+    }
+
+    let niveles = [1, 0.5, 0.25, 0.1, 0.05];
+    let indiceNivel = 0;
+
+    function toggleSlow() {
+
+        indiceNivel++;
+        if (indiceNivel >= niveles.length) {
+            indiceNivel = 0;
+        }
+
+        factorVelocidad = niveles[indiceNivel];
+
+        document.querySelector("button").textContent =
+            "Velocidad x" + factorVelocidad;
+    }
+    requestAnimationFrame(animar);
+
+    <\/script>
+    </body>
+    </html>`;
+
+            nuevaVentana.document.write(html);
+            nuevaVentana.document.close();
+        }
+
+        // =====================
+        // ZONA VITAL GLOBAL
+        // =====================
+
+
+        function actualizarZonaVital() {
+            const valor = parseFloat(document.getElementById("zona").value);
+            zonaVitalCm = isNaN(valor) ? 4 : valor;
+        }
+
+        // Inicializar al cargar
+        actualizarZonaVital();
+
+        // Escuchar cambios del input
+        document.getElementById("zona").addEventListener("input", actualizarZonaVital);
+
+
+
+    </script>
