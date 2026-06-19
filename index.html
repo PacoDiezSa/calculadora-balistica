@@ -1975,40 +1975,76 @@ ajustarCanvas();
         mostrarCoords = !mostrarCoords;
     }
 
-    // Movimiento (ratón + dedo)
-    canvas.addEventListener("pointermove", function(e) {
-        const rect = canvas.getBoundingClientRect();
-        crossX = e.clientX - rect.left;
-        crossY = e.clientY - rect.top;
-    });
 
-    // Pulsación (ratón + dedo)
-    canvas.addEventListener("pointerdown", function(e) {
+
+// ===== MOVIMIENTO (ratón + dedo) =====
+canvas.addEventListener("pointermove", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    crossX = e.clientX - rect.left;
+    crossY = e.clientY - rect.top;
+});
+
+
+// ===== CONTROL DE DISPARO =====
+
+let ultimoToque = 0;
+let temporizadorLongPress = null;
+const tiempoLongPress = 400; // milisegundos para disparo en móvil
+
+
+canvas.addEventListener("pointerdown", function(e) {
 
     const rect = canvas.getBoundingClientRect();
     crossX = e.clientX - rect.left;
     crossY = e.clientY - rect.top;
 
-    // BOTÓN IZQUIERDO (ratón)
-    if (e.pointerType === "mouse" && e.button === 0) {
-        disparar();
+    // ===== PC =====
+    if (e.pointerType === "mouse") {
+
+        // Click izquierdo → disparar
+        if (e.button === 0) {
+            disparar();
+        }
+
+        // Click derecho → reiniciar
+        if (e.button === 2) {
+            corregirDisparo();
+        }
     }
 
-    // BOTÓN DERECHO (ratón)
-    if (e.pointerType === "mouse" && e.button === 2) {
-        corregirDisparo();
-    }
-
-    // TOQUE EN MÓVIL
+    // ===== MÓVIL =====
     if (e.pointerType === "touch") {
-        disparar();   // en móvil el toque será disparo
+
+        const ahora = Date.now();
+
+        // Doble toque → reiniciar
+        if (ahora - ultimoToque < 300) {
+            corregirDisparo();
+            ultimoToque = 0;
+            return;
+        }
+
+        ultimoToque = ahora;
+
+        // Pulsación larga → disparar
+        temporizadorLongPress = setTimeout(() => {
+            disparar();
+        }, tiempoLongPress);
     }
 });
-    canvas.addEventListener("contextmenu", function(e) {
-        e.preventDefault();
-    });
 
 
+canvas.addEventListener("pointerup", function(e) {
+    if (e.pointerType === "touch") {
+        clearTimeout(temporizadorLongPress);
+    }
+});
+
+
+// Evitar menú contextual en PC
+canvas.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+});
 
 function dibujarAnimal(x) {
 
