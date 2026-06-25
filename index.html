@@ -1,4 +1,4 @@
-<!-- 24/06/2026 10:48 -->
+<!-- 25/06/2026 10:48 -->
 <!-- https://github.com/PacoDiezSa/calculadora-balistica -->
 <!doctype html>
 <html lang="es">
@@ -1693,7 +1693,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '2.3';
+            const APP_VERSION = '2.5';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1996,8 +1996,8 @@ canvas.addEventListener("pointermove", function(e) {
 // ===== CONTROL MULTI-TOUCH =====
 
 let punterosActivos = new Set();
-let ultimoToque = 0;
 
+// ===== POINTER DOWN =====
 canvas.addEventListener("pointerdown", function(e) {
 
     const rect = canvas.getBoundingClientRect();
@@ -2017,49 +2017,39 @@ canvas.addEventListener("pointerdown", function(e) {
             corregirDisparo(); // click derecho
         }
     }
+});
 
-    // ===== MÓVIL =====
+// ===== POINTER MOVE (móvil mueve la mira) =====
+canvas.addEventListener("pointermove", function(e) {
+
     if (e.pointerType === "touch") {
 
-        // Si hay 2 dedos → disparar
-        if (punterosActivos.size === 2) {
-            disparar();
-        }
+        const rect = canvas.getBoundingClientRect();
 
-        // Doble toque con un dedo → reiniciar
-        const ahora = Date.now();
-        if (punterosActivos.size === 1) {
-            if (ahora - ultimoToque < 300) {
-                corregirDisparo();
-                ultimoToque = 0;
-            }
-            ultimoToque = ahora;
-        }
+        crossX = e.clientX - rect.left;
+        crossY = e.clientY - rect.top;
     }
 });
 
+// ===== POINTER UP (móvil dispara al soltar) =====
 canvas.addEventListener("pointerup", function(e) {
+
     punterosActivos.delete(e.pointerId);
+
+    if (e.pointerType === "touch") {
+        disparar();
+    }
 });
 
-canvas.addEventListener("pointercancel", function(e) {
-    punterosActivos.delete(e.pointerId);
+// ===== DOBLE CLICK (PC corrige) =====
+canvas.addEventListener("dblclick", function() {
+    corregirDisparo();
 });
 
-// Evitar menú contextual
+// ===== Evitar menú contextual =====
 canvas.addEventListener("contextmenu", function(e) {
     e.preventDefault();
 });
-
-});
-
-canvas.addEventListener("pointerup", function(e) {
-    if (e.pointerType === "touch") {
-        clearTimeout(temporizadorLongPress);
-    }
-});
-
-
 // Evitar menú contextual en PC
 canvas.addEventListener("contextmenu", function(e) {
     e.preventDefault();
