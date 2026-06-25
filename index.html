@@ -1693,7 +1693,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '2.5';
+            const APP_VERSION = '2.7';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1839,7 +1839,7 @@ button:active {
     max-width: 260px;
 ">
 👆 1 dedo → mover mira<br>
-✌️ 2 dedos → disparar<br>
+👆 2 levantar dedo → disparar<br>
 👆👆 doble toque → volver a disparar
 </div>
 
@@ -1929,7 +1929,6 @@ if (estado && estado.velAnimal) {
     console.log("Se ejecuta esto");
 }
 
-
 // ===== MOVIMIENTO (ratón + dedo) =====
 canvas.addEventListener("pointermove", function(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1939,61 +1938,6 @@ canvas.addEventListener("pointermove", function(e) {
 
 
 // ===== CONTROL DE DISPARO =====
-
-let ultimoToque = 0;
-let temporizadorLongPress = null;
-const tiempoLongPress = 400; // milisegundos para disparo en móvil
-
-
-canvas.addEventListener("pointerdown", function(e) {
-
-    const rect = canvas.getBoundingClientRect();
-    crossX = e.clientX - rect.left;
-    crossY = e.clientY - rect.top;
-
-    // ===== PC =====
-    if (e.pointerType === "mouse") {
-
-        // Click izquierdo → disparar
-        if (e.button === 0) {
-            disparar();
-        }
-
-        // Click derecho → reiniciar
-        if (e.button === 2) {
-            corregirDisparo();
-        }
-    }
-
-    // ===== MÓVIL =====
- //   if (e.pointerType === "touch") {
-
-  //      const ahora = Date.now();
-
-        // Doble toque → reiniciar
-  //      if (ahora - ultimoToque < 300) {
-  //          corregirDisparo();
-  //          ultimoToque = 0;
-  //          return;
-  //      }
-
-  //      ultimoToque = ahora;
-
-        // Pulsación larga → disparar
-   //     temporizadorLongPress = setTimeout(() => {
-   //         disparar();
-   //     }, tiempoLongPress);
-  //  }
-
-// ===== MOVIMIENTO (ratón + dedo) =====
-canvas.addEventListener("pointermove", function(e) {
-    const rect = canvas.getBoundingClientRect();
-    crossX = e.clientX - rect.left;
-    crossY = e.clientY - rect.top;
-});
-
-
-// ===== CONTROL MULTI-TOUCH =====
 
 let punterosActivos = new Set();
 
@@ -2006,54 +1950,49 @@ canvas.addEventListener("pointerdown", function(e) {
 
     punterosActivos.add(e.pointerId);
 
-    // ===== PC =====
+    // PC
     if (e.pointerType === "mouse") {
 
         if (e.button === 0) {
-            disparar(); // click izquierdo
+            disparar();
         }
 
         if (e.button === 2) {
-            corregirDisparo(); // click derecho
+            corregirDisparo();
         }
     }
-});
 
-// ===== POINTER MOVE (móvil mueve la mira) =====
-canvas.addEventListener("pointermove", function(e) {
-
+    // Móvil
     if (e.pointerType === "touch") {
-
-        const rect = canvas.getBoundingClientRect();
-
-        crossX = e.clientX - rect.left;
-        crossY = e.clientY - rect.top;
+        e.preventDefault();
     }
-});
 
-// ===== POINTER UP (móvil dispara al soltar) =====
+}); // ✅ ESTE ES EL QUE FALTABA
+
+
+// ===== DISPARAR AL SOLTAR EN MÓVIL =====
 canvas.addEventListener("pointerup", function(e) {
 
     punterosActivos.delete(e.pointerId);
 
     if (e.pointerType === "touch") {
         disparar();
+        e.preventDefault();
     }
 });
 
-// ===== DOBLE CLICK (PC corrige) =====
+
+// ===== DOBLE CLICK PC =====
 canvas.addEventListener("dblclick", function() {
     corregirDisparo();
 });
 
-// ===== Evitar menú contextual =====
+
+// ===== EVITAR MENÚ DERECHO =====
 canvas.addEventListener("contextmenu", function(e) {
     e.preventDefault();
 });
-// Evitar menú contextual en PC
-canvas.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-});
+
 
 
 function dibujarAnimal(x) {
