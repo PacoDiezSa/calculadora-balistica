@@ -1667,7 +1667,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '2.8';
+            const APP_VERSION = '2.9';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1931,11 +1931,22 @@ if (estado && estado.velAnimal) {
     console.log("Se ejecuta esto");
 }
 
+// Desplazamiento de la cruz en móviles (para que el dedo no la tape)
+const offsetMovil = 80;
+
 // ===== MOVIMIENTO (ratón + dedo) =====
 canvas.addEventListener("pointermove", function(e) {
+
     const rect = canvas.getBoundingClientRect();
+
     crossX = e.clientX - rect.left;
-    crossY = e.clientY - rect.top;
+
+    if (e.pointerType === "touch") {
+        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
+    } else {
+        crossY = e.clientY - rect.top;
+    }
+
 });
 
 
@@ -1943,12 +1954,19 @@ canvas.addEventListener("pointermove", function(e) {
 
 let punterosActivos = new Set();
 
+
 // ===== POINTER DOWN =====
 canvas.addEventListener("pointerdown", function(e) {
 
     const rect = canvas.getBoundingClientRect();
+
     crossX = e.clientX - rect.left;
-    crossY = e.clientY - rect.top;
+
+    if (e.pointerType === "touch") {
+        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
+    } else {
+        crossY = e.clientY - rect.top;
+    }
 
     punterosActivos.add(e.pointerId);
 
@@ -1969,7 +1987,7 @@ canvas.addEventListener("pointerdown", function(e) {
         e.preventDefault();
     }
 
-}); 
+});
 
 
 // ===== DISPARAR AL SOLTAR EN MÓVIL =====
@@ -1982,8 +2000,6 @@ canvas.addEventListener("pointerup", function(e) {
         e.preventDefault();
     }
 });
-
-
 // ===== DOBLE CLICK PC =====
 canvas.addEventListener("dblclick", function() {
     corregirDisparo();
