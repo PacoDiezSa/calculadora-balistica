@@ -1,4 +1,4 @@
-<!-- 25/06/2026 10:48 -->
+<!-- 26/06/2026 8:48 -->
 <!-- https://github.com/PacoDiezSa/calculadora-balistica -->
 <!doctype html>
 <html lang="es">
@@ -66,7 +66,7 @@
             }
 
             .btn-disparar {
-                margin-top: 15px;
+                margin-top: 5px;
                 padding: 12px 20px;
                 background: #2e7d32;
                 color: white;
@@ -96,7 +96,7 @@
                 background: #607d8b;
                 color: white;
                 font-size: 15px;
-                margin-top: 15px;
+                margin-top: 5px;
             }
 
             .btn-restablecer:hover {
@@ -196,12 +196,12 @@
             }
 
             .mensaje-guia {
-                margin-top: 15px;
-                padding: 10px 14px;
+                margin-top: 5px;
+                padding: 6px 10px;
                 background: #f5f8fc;
                 border: 1px solid #d6e2f3;
                 border-radius: 6px;
-                font-size: 13px;
+                font-size: 12px;
                 color: #444;
             }
 
@@ -281,34 +281,6 @@
                 transform: translateY(1px);
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             }
-
-            /* prueba */
-            .btn-prueba {
-                background: linear-gradient(135deg, #ff7a18, #ff3c00);
-                color: white;
-                border: none;
-                padding: 14px 26px;
-                font-size: 16px;
-                font-weight: bold;
-                border-radius: 12px;
-                cursor: pointer;
-                margin: 25px auto;
-                display: block;
-                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-                transition: all 0.25s ease;
-            }
-
-            .btn-prueba:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
-            }
-
-            .btn-prueba:active {
-                transform: translateY(1px);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            }
-
-            /* fin prueba */
         </style>
     </head>
 
@@ -1142,7 +1114,9 @@
                 const cabezaY = animalY - altoPx * 0.15;
 
                 ctx.beginPath();
-                ctx.ellipse(cabezaX, cabezaY, cabezaRadio * 1.5, cabezaRadio * 0.65, 0, 0, Math.PI * 2);
+                // ctx.ellipse(cabezaX, cabezaY, cabezaRadio * 1.5, cabezaRadio * 0.65, 0, 0, Math.PI * 2);
+                ctx.ellipse(cabezaX, cabezaY, cabezaRadio * 1.5, cabezaRadio * 0.95, 0, 0, Math.PI * 2);
+
                 ctx.fill();
                 ctx.stroke();
 
@@ -1179,10 +1153,10 @@
 
                 // Colmillo superior visible
                 ctx.beginPath();
-                ctx.moveTo(cabezaX + cabezaRadio * 1.1, cabezaY + cabezaRadio * 0.2);
+                ctx.moveTo(cabezaX + cabezaRadio * 1.5, cabezaY - cabezaRadio * 0.7);
 
                 ctx.quadraticCurveTo(
-                    cabezaX + cabezaRadio * 1.35,
+                    cabezaX + cabezaRadio * 1.85,
                     cabezaY + cabezaRadio * 0.05,
                     cabezaX + cabezaRadio * 1.2,
                     cabezaY + cabezaRadio * 0.35,
@@ -1693,7 +1667,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '2.7';
+            const APP_VERSION = '2.8';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1702,8 +1676,6 @@
             // VARIABLES GLOBALES
             // =======================
 
-            //const ESCALA_PX_POR_METRO = 150;
-            //let escalaJabali = 1;
             let velocidadAnimalPx = 0;
             let inicioTiempo = null;
             let animalX = 0;
@@ -1727,6 +1699,7 @@
                 };
 
                 const zonaActual = zonaVitalCm;
+                console.log('zonaVitalCm ', zonaVitalCm);
                 window.estadoSimulador = {
                     velAnimal: velAnimalGlobal,
                     rad: radGlobal,
@@ -1753,7 +1726,7 @@ canvas {
     max-height: 60vh;      /* nunca más del 60% del alto */
     background: linear-gradient(#cfe3f5, #9fc2dd);
     display: block;
-    margin: 15px auto;
+    margin: 5px auto;
     border-radius: 12px;
     touch-action: none;
 }
@@ -1784,22 +1757,36 @@ button:active {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }  
 
+#barraSuperior{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+    margin:5px 180px 5px 15px;
+    flex-wrap:nowrap;
+}
+
+#barraSuperior h2{
+    margin:0;
+    margin-right:25px;
+}
+
 </style>
     </head>
     <body>
 
     <div id="datosFijos" style="
     position: fixed;
-    top: 15px;
-    right: 20px;
+    top: 2px;
+    right: 5px;
     background: rgba(0,0,0,0.65);
     color: white;
-    padding: 10px 14px;
+    padding: 4px 8px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 11px;
     text-align: left;
-    line-height: 1.4;
-    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    line-height: 1.1;
+    box-shadow: 0 0 6px rgba(0,0,0,0.3);
     z-index: 1000;
     ">
     <strong>Datos balísticos</strong><br>
@@ -1808,35 +1795,45 @@ button:active {
     Corrección altura: ${datos.caidaCm} cm
     </div>
 
-    <div id="infoVelocidad" 
-     style="text-align:center;font-size:18px;margin-top:10px;">
-    </div>
+    <div id="infoVelocidad"
+     style="
+     text-align:center;
+     font-size:16px;
+     margin:4px 0;
+     line-height:1.2;
+     ">
+</div>
 
+
+
+<div id="barraSuperior">
     <h2>Simulación de disparo</h2>
 
-    <div>
-    <button onclick="toggleSlow()">🐢 Cámara lenta</button>
-    <button onclick="toggleCoords()">📍 Mostrar coords</button>
-    </div>
+    <button onclick="toggleSlow()">
+        🐢 Cámara lenta
+    </button>
+
+    <button onclick="toggleCoords()">
+        📍 Mostrar coords
+    </button>
+</div>
 
 <canvas id="canvas"></canvas>
 
 
-
 <div id="ayudaMovil" style="
-    position: fixed;
-    top: 115px;   /* 👈 debajo de datosFijos */
-    right: 20px;
-    background: rgba(0,0,0,0.65);
-    color: white;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 14px;
-    text-align: left;
-    line-height: 1.5;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    z-index: 1000;
-    max-width: 260px;
+position: fixed;
+top: 85px;
+right: 10px;
+background: rgba(0,0,0,0.65);
+color: white;
+padding: 6px 10px;
+border-radius: 8px;
+font-size: 12px;
+line-height: 1.2;
+box-shadow: 0 0 6px rgba(0,0,0,0.3);
+z-index: 1000;
+max-width: 220px;
 ">
 👆 1 dedo → mover mira<br>
 👆 2 levantar dedo → disparar<br>
@@ -1882,11 +1879,18 @@ if (estado && estado.velAnimal) {
         if (ayuda) ayuda.style.display = "none";
     }
 
+
     function ajustarCanvas() {
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.width * 0.45; // proporción similar a 900x400
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width;
+
+    if (window.innerWidth < 768) {
+        canvas.height = 180;
+    } else {
+        canvas.height = 350;
     }
+}
 
     window.addEventListener("resize", ajustarCanvas);
     ajustarCanvas();
@@ -1902,7 +1906,6 @@ if (estado && estado.velAnimal) {
 
     let lineaSuelo = 0;
 
-    
     let factorVelocidad = 1;
     let mostrarCoords = false;
 
@@ -1923,7 +1926,6 @@ if (estado && estado.velAnimal) {
     function toggleCoords() {
         mostrarCoords = !mostrarCoords;
     }
-    let escalaJabali = 90;
 
     if (estadoImpacto === "delante") {
     console.log("Se ejecuta esto");
@@ -1967,7 +1969,7 @@ canvas.addEventListener("pointerdown", function(e) {
         e.preventDefault();
     }
 
-}); // ✅ ESTE ES EL QUE FALTABA
+}); 
 
 
 // ===== DISPARAR AL SOLTAR EN MÓVIL =====
@@ -1999,9 +2001,8 @@ function dibujarAnimal(x) {
 //======ancho y alto de la ventana ========
 // console.log(canvas.width)
 // console.log(canvas.height)
-//console.log(escalaJabali);
 
-const escala = escalaJabali / 180;
+const escala = 0.5;
 
 const y = lineaSuelo - 20 * escala;
 
@@ -2018,12 +2019,12 @@ ctx.moveTo(x - 90 * escala, y - 10 * escala);
 // ===== ESPALDA =====
 ctx.quadraticCurveTo(
     x - 40 * escala, y - 45 * escala,
-    x + 40 * escala, y - 30 * escala
+    x + 40 * escala, y - 40 * escala
 );
 
 // ===== CUELLO =====
 ctx.quadraticCurveTo(
-    x + 80 * escala, y - 25 * escala,
+    x + 80 * escala, y - 35 * escala,
     x + 95 * escala, y - 10 * escala
 );
 
@@ -2178,7 +2179,7 @@ ctx.restore();
 
         // const centroX = animalX;
         // const centroY = lineaSuelo - 20;
-        const escala = escalaJabali / 180;
+        const escala = 0.5;
 
         const centroX = animalX;
         const centroY = lineaSuelo - (20 * escala);
@@ -2228,7 +2229,7 @@ ctx.restore();
         ctx.lineTo(canvas.width, centroZonY);
         ctx.stroke();
 
-        // ===== Líneas verticales cada escalaJabali =====
+        // ===== Líneas verticales cada longitudJabaliPx =====
         longitudJabaliPx = 110;
 
         for (let x = 0; x <= canvas.width; x += longitudJabaliPx) {        
@@ -2254,7 +2255,7 @@ ctx.restore();
 
         if (mostrarCoords) {
 
-            const escala = escalaJabali / 180;
+            const escala = 0.5 / 180;
 
             const origenX = animalX + (10 * escala);
             const origenY = lineaSuelo - (20 * escala);
@@ -2265,7 +2266,7 @@ ctx.restore();
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
           //  ctx.fillText("Adelanto del disparo: " + Math.round(relX), crossX + 15, crossY - 10);
-            const cuerpos = relX / escalaJabali;
+            const cuerpos = relX / 90;
 
             ctx.fillText(
             "Adelanto del disparo: " + cuerpos.toFixed(2),
@@ -2336,7 +2337,7 @@ ctx.restore();
         // =========================
         // CALCULAR ZONA VITAL
         // =========================
-        const escala = escalaJabali / 180;
+        const escala = 0.5;
 
         // zona vital física REAL
         const vitalAncho = cmToPixel(zonaVitalCm * 2);
@@ -2418,17 +2419,12 @@ velocidadAnimalPx = estado.velAnimal * pxPorMetro;
 
     const div = document.getElementById("infoVelocidad");
 
-    // div.innerHTML =
-    //     "Velocidad real: " + velReal.toFixed(2) + " m/s<br>" +
-    //     "Simulación: x" + factorVelocidad + "<br>" +
-    //     "Velocidad en pantalla: " + velSimulada.toFixed(2) + " m/s";
-    // }
 
-    div.innerHTML =
-        "Velocidad real: " + velReal.toFixed(2) + " m/s<br>" +
-        "Simulación: x" + factorVelocidad + "<br>" +
-        "Tamaño terreno en pantalla: " + anchoPantallaCm.toFixed(2) + " m<br>" +
-        "Velocidad en pantalla: " + velSimulada.toFixed(2) + " m/s";
+div.innerHTML =
+"Velocidad real: " + velReal.toFixed(2) + " m/s &nbsp; | &nbsp; " +
+"Simulación: x" + factorVelocidad + " &nbsp; | &nbsp; " +
+"Tamaño terreno: " + anchoPantallaCm.toFixed(2) + " m &nbsp; | &nbsp; " +
+"Velocidad pantalla: " + velSimulada.toFixed(2) + " m/s";
     }
 
     function corregirDisparo() {
