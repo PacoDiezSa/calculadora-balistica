@@ -1667,7 +1667,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '2.9';
+            const APP_VERSION = '3.0';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1822,24 +1822,21 @@ button:active {
 
 
 <div id="ayudaMovil" style="
-position: fixed;
-top: 85px;
-right: 10px;
+margin: 10px auto;
+padding: 8px 12px;
 background: rgba(0,0,0,0.65);
 color: white;
-padding: 6px 10px;
 border-radius: 8px;
-font-size: 12px;
-line-height: 1.2;
+font-size: 13px;
+line-height: 1.4;
 box-shadow: 0 0 6px rgba(0,0,0,0.3);
-z-index: 1000;
-max-width: 220px;
+max-width: 320px;
+text-align: left;
 ">
-👆 1 dedo → mover mira<br>
-👆 2 levantar dedo → disparar<br>
-👆👆 doble toque → volver a disparar
+👆 <strong>1 dedo</strong> → mover la mira<br>
+👆 <strong>Levantar el dedo</strong> → disparar<br>
+👆👆 <strong>Doble toque</strong> → volver a disparar
 </div>
-
     <h3 id="resultado"></h3>
 
     <script>
@@ -1932,7 +1929,7 @@ if (estado && estado.velAnimal) {
 }
 
 // Desplazamiento de la cruz en móviles (para que el dedo no la tape)
-const offsetMovil = 80;
+const offsetMovil = -80;
 
 // ===== MOVIMIENTO (ratón + dedo) =====
 canvas.addEventListener("pointermove", function(e) {
@@ -2381,21 +2378,21 @@ ctx.restore();
             estadoImpacto = "delante";
         }     
             
-        // =========================
-        // MENSAJE TEXTO
-        // =========================
+        // // =========================
+        // // MENSAJE TEXTO
+        // // =========================
 
-        if (estadoImpacto === "vital") {
-            document.getElementById("resultado").textContent = "IMPACTO VITAL";
-        }
+        // if (estadoImpacto === "vital") {
+        //     document.getElementById("resultado").textContent = "IMPACTO VITAL";
+        // }
 
-        if (estadoImpacto === "delante") {
-            document.getElementById("resultado").textContent = "Disparo adelantado";
-        }
+        // if (estadoImpacto === "delante") {
+        //     document.getElementById("resultado").textContent = "Disparo adelantado";
+        // }
 
-        if (estadoImpacto === "detras") {
-            document.getElementById("resultado").textContent = "Disparo retrasado";
-        }
+        // if (estadoImpacto === "detras") {
+        //     document.getElementById("resultado").textContent = "Disparo retrasado";
+        // }
     }
 
 
