@@ -1523,7 +1523,7 @@
                 factorDrag: 3000,
                 v0: 838,
                 alt: 1000,
-                zona: 15,
+                zona: 20,
                 viento: 4,
                 velAnimal: 4,
                 pendiente: 0,
@@ -1667,7 +1667,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '3.2';
+            const APP_VERSION = '3.3';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -2108,13 +2108,24 @@ ctx.fillRect(x + 55 * escala, y + 18 * escala, 12 * escala, 40 * escala);
 if (!jabaliAbatido) {
     ctx.fillStyle = "rgba(255,0,0,0.6)";
     ctx.beginPath();
-    ctx.arc(
-        x + 20 * escala,
-        y - 5 * escala,
-        zonaVitalCm * escala,
-        0,
-        Math.PI * 2
-    );
+    // ctx.arc(
+    //     x + 40 * escala,
+    //     y - 5 * escala,
+    //     zonaVitalCm * escala,
+    //     0,
+    //     Math.PI * 2
+    // );
+    ctx.beginPath();
+ctx.ellipse(
+    x + 40 * escala,
+    y - 5 * escala,
+    zonaVitalCm * escala * 2,
+    zonaVitalCm * escala,
+    0,
+    0,
+    Math.PI * 2
+);
+ctx.stroke();
     ctx.fill();
 }
 
@@ -2135,10 +2146,10 @@ ctx.stroke();
 
 ctx.restore();
 }
-    function cmToPixel(cm) {
-    const escala = 3; // o el factor que estés usando
-    return cm * escala;
-    }
+    // function cmToPixel(cm) {
+    // const escala = 3; // o el factor que estés usando
+    // return cm * escala;
+    // }
     
     function dibujarVisor() {
         ctx.strokeStyle = "black";
@@ -2260,8 +2271,61 @@ ctx.restore();
             ctx.stroke();
             ctx.strokeStyle = "rgba(250,250,250,1)";
         }
-
         ctx.restore();
+
+
+        // ===== Cota del tamaño del terreno =====
+const yCota = centroZonY + 25;      // 25 px debajo de la línea roja
+const altoMarca = 10;
+
+// Líneas de referencia en los extremos
+ctx.save();
+ctx.strokeStyle = "black";
+ctx.fillStyle = "black";
+ctx.lineWidth = 1;
+
+ctx.beginPath();
+
+// Extremo izquierdo
+ctx.moveTo(0, centroZonY);
+ctx.lineTo(0, yCota);
+
+// Extremo derecho
+ctx.moveTo(canvas.width, centroZonY);
+ctx.lineTo(canvas.width, yCota);
+
+// Línea de cota
+ctx.moveTo(0, yCota);
+ctx.lineTo(canvas.width, yCota);
+
+ctx.stroke();
+
+// Flecha izquierda
+ctx.beginPath();
+ctx.moveTo(0, yCota);
+ctx.lineTo(8, yCota - 4);
+ctx.lineTo(8, yCota + 4);
+ctx.closePath();
+ctx.fill();
+
+// Flecha derecha
+ctx.beginPath();
+ctx.moveTo(canvas.width, yCota);
+ctx.lineTo(canvas.width - 8, yCota - 4);
+ctx.lineTo(canvas.width - 8, yCota + 4);
+ctx.closePath();
+ctx.fill();
+
+// Texto
+ctx.font = "16px Arial";
+ctx.textAlign = "center";
+ctx.textBaseline = "bottom";
+ctx.fillText(
+    "Tamaño del terreno: " + anchoPantallaCm.toFixed(2) + " m",
+    canvas.width / 2,
+    yCota - 4
+);
+ctx.restore();
 
 
         dibujarVisor();
@@ -2292,27 +2356,55 @@ ctx.restore();
 
         if (balaX !== null && !jabaliAbatido) {
             //ctx.fillStyle = "yellow";
-            ctx.fillStyle = "red";
+            ctx.fillStyle = "blue";
             ctx.beginPath();
             ctx.arc(balaX, balaY, 6, 0, Math.PI*2);
             ctx.fill();
         }
 
         // ✅ MENSAJES SI NO ES VITAL
-        if (estadoImpacto === "delante") {
-            ctx.fillStyle = "black";
-            ctx.font = "bold 28px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
-        }
+        // if (estadoImpacto === "delante") {
+        //     ctx.fillStyle = "black";
+        //     ctx.font = "bold 28px Arial";
+        //     ctx.textAlign = "center";
+        //     ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
+        // }
 
-        if (estadoImpacto === "detras") {
-            ctx.fillStyle = "red";
-            ctx.font = "bold 28px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
-        }
+        // if (estadoImpacto === "detras") {
+        //     ctx.fillStyle = "red";
+        //     ctx.font = "bold 28px Arial";
+        //     ctx.textAlign = "center";
+        //     ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
+        // }
+        ctx.textAlign = "center";
+ctx.font = "bold 28px Arial";
 
+switch (estadoImpacto) {
+    case "delante":
+        ctx.fillStyle = "black";
+        ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
+        break;
+
+    case "detras":
+        ctx.fillStyle = "red";
+        ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
+        break;
+
+    case "arriba":
+        ctx.fillStyle = "orange";
+        ctx.fillText("DISPARO ALTO", canvas.width / 2, 60);
+        break;
+
+    case "abajo":
+        ctx.fillStyle = "blue";
+        ctx.fillText("DISPARO BAJO", canvas.width / 2, 60);
+        break;
+
+    case "rozando":
+        ctx.fillStyle = "purple";
+        ctx.fillText("DISPARO MARGINAL", canvas.width / 2, 60);
+        break;
+}
         requestAnimationFrame(animarDisparo);
     }
 
@@ -2344,17 +2436,19 @@ ctx.restore();
 
         estadoImpacto = null; // reset
 
-        balaX = crossX - adelantoCm;
+       // balaX = crossX - adelantoCm;
+        balaX = crossX - adelantoCm + 20;
+
         balaY = crossY - caidaCm;
 
         // =========================
         // CALCULAR ZONA VITAL
         // =========================
         const escala = 0.5;
-
+        const relPxCm= longitudJabaliPx/longitudJabaliCm;
         // zona vital física REAL
-        const vitalAncho = cmToPixel(zonaVitalCm * 2);
-        const vitalAlto  = cmToPixel(zonaVitalCm * 2);
+        const vitalAncho = zonaVitalCm * relPxCm * 2;
+        const vitalAlto  = zonaVitalCm * relPxCm;
 
         // centro visual
         const vitalX = animalX + (10 * escala);
@@ -2363,39 +2457,60 @@ ctx.restore();
         const a = vitalAncho / 2;
         const b = vitalAlto / 2;
 
+            console.log("animalX =", animalX)
+
+
+console.log("zonaVitalCm =",zonaVitalCm)
+console.log("vitalAncho = ", vitalAncho);
+console.log("vitalAlto = ", vitalAlto);
+
         const dx = balaX - vitalX;
         const dy = balaY - vitalY;
 
-        const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
+    //     const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
+    //     console.log("balaY = ", balaY)
+    //     console.log("vitalY = ",vitalY)
 
-        if (dentro) {
-            estadoImpacto = "vital";
-            cayendo = true;
-            jabaliAbatido = true; 
-        } else if (balaX < vitalX - a) {
-            estadoImpacto = "detras";
-        } else {
-            estadoImpacto = "delante";
-        }     
+    //     if (dentro) {
+    //         estadoImpacto = "vital";
+    //         cayendo = true;
+    //         jabaliAbatido = true; 
+    //     } else if (balaX < vitalX - a) {
+    //         estadoImpacto = "detras";
+    //     } else {
+    //         estadoImpacto = "delante";
+    //     }     
             
-        // // =========================
-        // // MENSAJE TEXTO
-        // // =========================
+    // }
+    const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
 
-        // if (estadoImpacto === "vital") {
-        //     document.getElementById("resultado").textContent = "IMPACTO VITAL";
-        // }
+    console.log("balaY =", balaY);
+    console.log("vitalY =", vitalY);
 
-        // if (estadoImpacto === "delante") {
-        //     document.getElementById("resultado").textContent = "Disparo adelantado";
-        // }
+    if (dentro) {
+        estadoImpacto = "vital";
+        cayendo = true;
+        jabaliAbatido = true;
 
-        // if (estadoImpacto === "detras") {
-        //     document.getElementById("resultado").textContent = "Disparo retrasado";
-        // }
+    } else if (balaY < vitalY - b) {
+        estadoImpacto = "arriba";
+
+    } else if (balaY > vitalY + b) {
+        estadoImpacto = "abajo";
+
+    } else if (balaX < vitalX - a) {
+        estadoImpacto = "detras";
+
+    } else if (balaX > vitalX + a) {
+        estadoImpacto = "delante";
+
+    } else {
+        // Está fuera de la elipse, pero dentro del rectángulo que la contiene
+        // (una de las cuatro esquinas)
+        estadoImpacto = "rozando";
     }
-
-
+  }
+    console.log("estadoImpacto = ", estadoImpacto)
     //----------------------------------
 
     calculoVelocidadRealSimulador();
@@ -2436,7 +2551,6 @@ velocidadAnimalPx = estado.velAnimal * pxPorMetro;
 div.innerHTML =
 "Velocidad real: " + velReal.toFixed(2) + " m/s &nbsp; | &nbsp; " +
 "Simulación: x" + factorVelocidad + " &nbsp; | &nbsp; " +
-"Tamaño terreno: " + anchoPantallaCm.toFixed(2) + " m &nbsp; | &nbsp; " +
 "Velocidad pantalla: " + velSimulada.toFixed(2) + " m/s";
     }
 
