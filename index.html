@@ -1,4 +1,4 @@
-<!-- 26/06/2026 8:48 -->
+<!-- 2/07/2026 20:18 -->
 <!-- https://github.com/PacoDiezSa/calculadora-balistica -->
 <!doctype html>
 <html lang="es">
@@ -310,8 +310,11 @@
             <label>Zona vital (diámetro en cm)</label>
             <input id="zona" type="number" value="15" />
 
-            <label>Viento lateral (m/s)</label>
+            <label>Velocidad del viento (m/s)</label>
             <input id="viento" type="number" value="4" />
+
+            <label>Ángulo del viento (°)</label>
+            <input id="anguloViento" type="number" value="90" min="0" max="360" />
 
             <label>Velocidad del animal (m/s)</label>
             <input id="velAnimal" type="number" value="8" />
@@ -319,7 +322,7 @@
             <label>Pendiente terreno (°)</label>
             <input id="pendiente" type="number" value="0" />
 
-            <label>Ángulo animal (°)</label>
+            <label>Ángulo desplazamiento del animal (°)</label>
             <input id="anguloAnimal" type="number" value="0" />
 
             <label>Sistema de torreta</label>
@@ -365,10 +368,9 @@
                             <th>Dist. geométrica (m)</th>
                             <th>Vel (m/s)</th>
                             <th>Energía (J)</th>
-                            <th>Tray (cm)</th>
-                            <th>Viento (cm)</th>
-                            <th>Adelanto (cm)</th>
-                            <th>Dist. efectiva (m)</th>
+                            <th>Caída (cm)</th>
+                            <th>Deriva (cm)</th>
+                            <th>Adelanto de disparo (cm)</th>
                             <th>Tiempo (s)</th>
                             <th>Clicks ↑ (0.1 mrad)</th>
                             <th>Clicks → (0.1 mrad)</th>
@@ -376,6 +378,48 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+            <div id="panelEntrenamiento">
+                <div class="tituloPanel">SESIÓN ACTUAL</div>
+
+                <div class="linea">
+                    <span>Distancia</span>
+                    <span id="pDistancia">75 m</span>
+                </div>
+
+                <div class="linea">
+                    <span>Velocidad</span>
+                    <span id="pVelocidad">3.2 m/s</span>
+                </div>
+
+                <hr />
+
+                <div class="linea">
+                    <span>Disparos</span>
+                    <span id="pDisparos">0</span>
+                </div>
+
+                <div class="linea">
+                    <span>Aciertos</span>
+                    <span id="pAciertos">0</span>
+                </div>
+
+                <div class="linea">
+                    <span>Adelantos</span>
+                    <span id="pAdelantos">0</span>
+                </div>
+
+                <div class="linea">
+                    <span>Atrasos</span>
+                    <span id="pAtrasos">0</span>
+                </div>
+
+                <hr />
+
+                <div class="linea">
+                    <span>Precisión</span>
+                    <span id="pPrecision">0 %</span>
+                </div>
             </div>
 
             <canvas id="simulacion" width="900" height="400"></canvas>
@@ -433,7 +477,6 @@
             const zoomSlider = document.getElementById('zoom');
             const zoomValor = document.getElementById('zoomValor');
             let zonaVitalCm = 15;
-
             zoomSlider.addEventListener('input', function () {
                 zoomValor.textContent = this.value + 'x';
                 if (ultimaSimulacion) {
@@ -474,47 +517,6 @@
                 return t;
             }
 
-            function calcularBalistica(dSim) {
-                if (!trayGlobal) return;
-
-                let idx = trayGlobal.findIndex((p) => p.x >= dSim);
-                if (idx <= 0) return;
-
-                let p1 = trayGlobal[idx - 1];
-                let p2 = trayGlobal[idx];
-
-                let f = (dSim - p1.x) / (p2.x - p1.x);
-
-                let punto = {
-                    x: dSim,
-                    y: p1.y + f * (p2.y - p1.y),
-                    v: p1.v + f * (p2.v - p1.v),
-                    t: p1.t + f * (p2.t - p1.t),
-                };
-
-                let tReal = tiempoHastaIntercepcion(dSim, velAnimalGlobal, radGlobal, trayGlobal);
-
-                let distanciaEfectiva = dSim + velAnimalGlobal * Math.sin(radGlobal) * tReal;
-
-                let alturaTerreno = dSim * Math.tan(betaGlobal);
-                let deltaLong = velAnimalGlobal * Math.sin(radGlobal) * tReal;
-                let deltaAltura = deltaLong * Math.tan(betaGlobal);
-                let alturaAnimal = alturaTerreno + deltaAltura;
-
-                let adelantoCm = deltaLong * 100;
-                let alturaCm = (punto.y - alturaAnimal) * 100;
-
-                const datos = {
-                    distancia: dSim,
-                    adelantoCm,
-                    alturaCm,
-                };
-
-                //console.log(datos);
-
-                dibujarEscenaBalistica(datos);
-            }
-
             function calcular() {
                 const nombreCartucho = document.getElementById('cartucho').value;
                 const bc = parseFloat(document.getElementById('bc').value);
@@ -522,6 +524,9 @@
                 const alt = parseFloat(document.getElementById('alt').value);
                 const zona = parseFloat(document.getElementById('zona').value) / 100;
                 const viento = parseFloat(document.getElementById('viento').value);
+                const anguloViento = parseFloat(document.getElementById('anguloViento').value);
+                const radViento = (anguloViento * Math.PI) / 180;
+                const vientoTransversal = viento * Math.sin(radViento);
                 const sistema = document.getElementById('sistema').value;
                 const valorClick = parseFloat(document.getElementById('valorClick').value);
                 const pendiente = parseFloat(document.getElementById('pendiente').value);
@@ -650,6 +655,7 @@
                     "<div class='mensaje-guia' style='margin-top:15px; padding:10px; background:#f5f8fc; border:1px solid #d6e2f3; border-radius:6px; font-size:13px;'>" +
                     '▶ Haga clic en una fila de la tabla para mostrar la simulación de tiro.' +
                     '</div>';
+
                 // --- TABLA ---
                 const tbody = document.querySelector('#tabla tbody');
                 tbody.innerHTML = '';
@@ -680,12 +686,19 @@
 
                     let distanciaGeometrica = Math.abs(Math.cos(beta)) < 0.0001 ? '-' : d / Math.cos(beta);
 
-                    let deriva_cm = viento * punto.t * 100;
+                    // Deriva por viento.
+                    // Se utiliza el "lag time" (tiempo real - tiempo en vacío),
+                    // ya que reproduce razonablemente las tablas publicadas por
+                    // los fabricantes sin recurrir a un modelo aerodinámico completo.
+                    let tiempoVacio = d / v0;
+                    let lagTime = punto.t - tiempoVacio;
+                    let deriva_cm = vientoTransversal * lagTime * 100;
                     let caida_cm = punto.y * 100;
                     let energia = 0.5 * masa * punto.v * punto.v;
                     let tReal = tiempoHastaIntercepcion(d, velAnimal, rad, trayFinal);
                     let distanciaEfectiva = d + velAnimal * Math.sin(rad) * tReal;
                     let adelanto_cm = velAnimal * tReal * Math.cos(rad) * 100;
+                    let adelantoCorregido_cm = adelanto_cm - deriva_cm;
                     let alturaTerreno = d * Math.tan(beta);
                     let deltaLongitudinal = velAnimal * Math.sin(rad) * tReal;
                     let deltaAltura = deltaLongitudinal * Math.tan(beta);
@@ -720,10 +733,16 @@
         <td>${distanciaGeometrica.toFixed(2)}</td>
         <td>${punto.v.toFixed(0)}</td>
         <td>${energia.toFixed(0)}</td>
-        <td>${Math.round(caida_cm)}</td>
+        <td style="background:#e8f8e8;font-weight:bold;">
+            ${Math.round(caida_cm)}</td>
+        </td>      
+
+
         <td>${Math.round(deriva_cm)}</td>
-        <td>${Math.round(adelanto_cm)}</td>
-        <td>${distanciaEfectiva.toFixed(2)}</td>
+        <td style="background:#eef6ff;font-weight:bold;">
+            ${Math.round(adelantoCorregido_cm)}
+        </td>      
+        
         <td>${tReal.toFixed(3)}</td>
         <td>${clicksVertical}</td>
         <td>${clicksHorizontal}</td>
@@ -757,10 +776,8 @@
                     velocidad: parseFloat(celdas[2].innerText),
                     alturaCm: parseFloat(celdas[4].innerText),
                     adelantoCm: parseFloat(celdas[6].innerText),
-                    tiempoVuelo: parseFloat(celdas[8].innerText),
+                    tiempoVuelo: parseFloat(celdas[7].innerText),
                 };
-
-                //console.log("Datos desde tabla:", datos);
 
                 ultimaSimulacion = datos;
 
@@ -779,7 +796,7 @@
 
                 const maxDist = 300;
 
-                // Autoescala vertical según trayectoria real
+                // AutoESCALA vertical según trayectoria real
                 let ys = trayectoria.filter((p) => p.x <= maxDist).map((p) => p.y);
 
                 const maxAltura = Math.max(...ys) + 0.02;
@@ -1524,7 +1541,7 @@
                 v0: 838,
                 alt: 1000,
                 zona: 20,
-                viento: 4,
+                viento: 0,
                 velAnimal: 4,
                 pendiente: 0,
                 anguloAnimal: 0,
@@ -1667,18 +1684,24 @@
         </footer>
 
         <script>
-            const APP_VERSION = '3.3';
+            const APP_VERSION = '4.0';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
         <script>
-            // =======================
-            // VARIABLES GLOBALES
-            // =======================
+            // ====================================================
+            // VARIABLES GLOBALES DE LA CALCULADORA
+            // ====================================================
 
             let velocidadAnimalPx = 0;
             let inicioTiempo = null;
             let animalX = 0;
+
+            //-------------------------------------------------------------------------------------------
+
+            // ====================================================
+            // APERTURA DEL SIMULADOR DE ENTRENAMIENTO
+            // ====================================================
 
             function abrirSimulador() {
                 const fila = document.querySelector('tr.seleccionada');
@@ -1690,35 +1713,34 @@
 
                 const celdas = fila.querySelectorAll('td');
 
-                const datos = {
+                const datosBalisticos = {
                     distancia: parseFloat(celdas[0].textContent),
-                    tiempoVuelo: parseFloat(celdas[8].textContent),
-                    caidaCm: parseFloat(celdas[4].textContent),
-                    adelantoCm: parseFloat(celdas[6].textContent),
                     velocidad: parseFloat(celdas[2].textContent),
+                    caidaCm: parseFloat(celdas[4].textContent),
+                    derivaCm: parseFloat(celdas[5].textContent),
+                    adelantoCm: parseFloat(celdas[6].textContent),
+                    tiempoVuelo: parseFloat(celdas[7].textContent),
                 };
 
-                const zonaActual = zonaVitalCm;
-                console.log('zonaVitalCm ', zonaVitalCm);
-                window.estadoSimulador = {
-                    velAnimal: velAnimalGlobal,
-                    rad: radGlobal,
-                    tray: trayGlobal,
-                    zona: zonaVitalCm,
+                // Configuración elegida por el usuario
+                window.configuracionEntrenamiento = {
+                    velocidadAnimal: velAnimalGlobal,
+                    radio: radGlobal,
+                    trayectoria: trayGlobal,
+                    zonaVitalCm: zonaVitalCm,
                 };
                 const nuevaVentana = window.open('', '_blank', 'width=1000,height=600');
                 nuevaVentana.document.open();
-
                 const html = `<!DOCTYPE html>
     <html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulación balística</title>
-<style>
-html, body {
-    margin: 0;
-    padding: 0;
-}
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Simulación balística</title>
+        <style>
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
 
 canvas {
     width: 95vw;           /* ocupa casi todo el ancho */
@@ -1771,30 +1793,111 @@ button:active {
     margin-right:25px;
 }
 
+#panelEntrenamiento{
+
+position:absolute;
+
+top:20px;
+right:20px;
+
+width:220px;
+
+background:rgba(0,0,0,0.65);
+
+color:white;
+
+border:1px solid #888;
+
+border-radius:10px;
+
+padding:12px;
+
+font-family:Arial;
+
+font-size:14px;
+
+z-index:1000;
+
+user-select:none;
+
+}
+
+.tituloPanel{
+
+text-align:center;
+
+font-weight:bold;
+
+margin-bottom:10px;
+
+color:#FFD700;
+
+}
+
+.linea{
+
+display:flex;
+
+justify-content:space-between;
+
+margin:4px 0;
+
+}
+
+#panelEntrenamiento hr{
+
+border:none;
+
+border-top:1px solid #666;
+
+margin:8px 0;
+
+}
+
+
 </style>
     </head>
     <body>
 
-    <div id="datosFijos" style="
-    position: fixed;
-    top: 2px;
-    right: 5px;
-    background: rgba(0,0,0,0.65);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 8px;
-    font-size: 11px;
-    text-align: left;
-    line-height: 1.1;
-    box-shadow: 0 0 6px rgba(0,0,0,0.3);
-    z-index: 1000;
-    ">
-    <strong>Datos balísticos</strong><br>
-    Distancia: ${datos.distancia} m<br>
-    Adelanto: ${datos.adelantoCm} cm<br>
-    Corrección altura: ${datos.caidaCm} cm
-    </div>
+        <div id="datosFijos" style="
+position: fixed;
+top: 2px;
+right: 5px;
+background: rgba(0,0,0,0.65);
+color: white;
+padding: 4px 8px;
+border-radius: 8px;
+font-size: 11px;
+text-align: left;
+line-height: 1.1;
+box-shadow: 0 0 6px rgba(0,0,0,0.3);
+z-index: 1000;
+">
 
+<strong>Datos balísticos</strong><br>
+Distancia: ${datosBalisticos.distancia} m<br>
+Adelanto: ${datosBalisticos.adelantoCm} cm<br>
+Corrección altura: ${-datosBalisticos.caidaCm} cm<br>
+
+<hr style="margin:4px 0;border:0;border-top:1px solid #777;">
+
+<strong>Entrenamiento</strong><br>
+
+Disparos:
+<span id="txtDisparos">0</span><br>
+
+Aciertos:
+<span id="txtAciertos">0</span><br>
+
+Adelantos:
+<span id="txtAdelantos">0</span><br>
+
+Atrasos:
+<span id="txtAtrasos">0</span><br>
+
+Precisión:
+<span id="txtPrecision">0%</span><br>
+</div>
     <div id="infoVelocidad"
      style="
      text-align:center;
@@ -1805,12 +1908,23 @@ button:active {
 </div>
 
 
-
 <div id="barraSuperior">
     <h2>Simulación de disparo</h2>
 
     <button onclick="toggleSlow()">
         🐢 Cámara lenta
+    </button>
+
+    <button id="btnPausa" onclick="togglePausa()">
+    ⏸ Pausa
+    </button>
+
+    <button id="btnInicio" onclick="iniciarSimulacion()">
+    ▶ INICIAR
+    </button>
+
+    <button id="btnSeguimiento" onclick="toggleSeguimiento()">
+    🎯 Altura AUTO: OFF
     </button>
 
     <button onclick="toggleCoords()">
@@ -1819,7 +1933,6 @@ button:active {
 </div>
 
 <canvas id="canvas"></canvas>
-
 
 <div id="ayudaMovil" style="
 margin: 10px auto;
@@ -1839,584 +1952,270 @@ text-align: left;
 </div>
     <h3 id="resultado"></h3>
 
-    <script>
+<script>
 
-        window.onload = function() {
+     // ==================================================
+    // CONSTANTES
+    // ==================================================
 
-const estado = window.opener.estadoSimulador;
+    const tiempoVuelo = ${datosBalisticos.tiempoVuelo};
+    const caidaCm = ${datosBalisticos.caidaCm};
+    const adelantoCm = ${datosBalisticos.adelantoCm};
+    const configuracion = window.opener.configuracionEntrenamiento;
+    const zonaVitalCm = configuracion.zonaVitalCm;
 
-const div = document.getElementById("infoVelocidad");
-
-if (estado && estado.velAnimal) {
-    div.textContent = "Velocidad del animal: " 
-        + estado.velAnimal.toFixed(2) 
-        + " m/s";
-} else {
-    div.textContent = "Velocidad no disponible";
-}
-};
-
-
-    const tiempoVuelo = ${datos.tiempoVuelo};
-    const caidaCm = ${datos.caidaCm};
-    const adelantoCm = ${datos.adelantoCm};
-    const zonaVitalCm = ${zonaActual};
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    let longitudJabaliPx=110
-    let longitudJabaliCm=120
     let anchoPantallaPX=canvas.width;
     let anchoPantallaCm=0;
+    const TAMANO_VISOR = 40;
+    const MODO_CALIBRACION = false;
+    const DESPLAZAMIENTO_FONDO_Y = -20;
 
+    // ==================================================
+    // GEOMETRÍA DEL JABALÍ
+    // ==================================================
+    const ESCALA = 0.5;
+    const LONGITUD_JABALI_CM = 120;
+    const LONGITUD_JABALI_PX = 110;
 
+    const PIXELES_POR_CM = LONGITUD_JABALI_PX / LONGITUD_JABALI_CM;
+    const caidaPx = caidaCm * PIXELES_POR_CM;
 
-    // Ocultar ayuda si no es pantalla táctil
-    if (!('ontouchstart' in window)) {
-        const ayuda = document.getElementById("ayudaMovil");
-        if (ayuda) ayuda.style.display = "none";
+    const RADIO_BALA = 4;
+   // const ANCHO_JABALI_PX = 180;
+    //const ALTO_JABALI_PX  = 132;
+    const ANCHO_JABALI_PX = LONGITUD_JABALI_PX;
+    const PROPORCION_JABALI = 220 / 300;
+    const ALTO_JABALI_PX = Math.round(ANCHO_JABALI_PX * PROPORCION_JABALI);
+
+    // const OFFSET_IMAGEN_X = 89;
+    // const OFFSET_IMAGEN_Y = 90;
+    const OFFSET_IMAGEN_X = 54;
+    const OFFSET_IMAGEN_Y = 55;
+
+    
+    const AJUSTE_SUELO = 3;
+   const DISTANCIA_ZONA_VITAL_SUELO = 57;   // ejemplo
+   
+
+   
+
+    // ==================================================
+    // CENTRO DE LA ZONA VITAL
+    // ==================================================
+
+        function obtenerCentroZonaVital() {
+        return {
+            x: animalX,
+            y: lineaSuelo - DISTANCIA_ZONA_VITAL_SUELO - 3
+        };
     }
 
 
-    function ajustarCanvas() {
-    const rect = canvas.getBoundingClientRect();
+    // ==================================================
+    // VARIABLES DE LA ANIMACIÓN
+    // ==================================================
 
-    canvas.width = rect.width;
-
-    if (window.innerWidth < 768) {
-        canvas.height = 180;
-    } else {
-        canvas.height = 350;
-    }
-}
-
-    window.addEventListener("resize", ajustarCanvas);
-    ajustarCanvas();
     let animalX = 0;
     let inicioTiempo;
-    let animando = true;
+    let animando = false;
+    let lineaSuelo = 0;
+    let factorVelocidad = 1;
+    let desplazamientoFondo = 0;
+    let pausado = false;
+    let instantePausa = 0;
+    // ==================================================
+    // MIRA
+    // ==================================================
 
     let crossX = 50;
     let crossY = canvas.height / 2;
 
+    let mostrarCoords = false;
+
+    let ayudaSeguimiento = false;
+    // ==================================================
+    // DISPARO
+    // ==================================================
+
     let balaX = null;
     let balaY = null;
 
-    let lineaSuelo = 0;
-
-    let factorVelocidad = 1;
-    let mostrarCoords = false;
-
     let estadoImpacto = null;
-    let jabaliMuerto = new Image();
+
+
+    // ==================================================
+    // ANIMACIÓN DE LA CAÍDA
+    // ==================================================
 
     let anguloCaida = 0;
     let cayendo = false;
-    let jabaliAbatido = false;
+    let jabaliAbatido = false;   
+    // ==================================================
+    // ESTADÍSTICAS
+    // ==================================================
+    let disparos = 0;
+    let aciertos = 0;
+    let adelantos = 0;
+    let atrasos = 0;
+    let precision = 0;
 
-    jabaliMuerto.src = "jabali_muerto.png";
+
+    // // ==================================================
+    // // INICIALIZACIÓN (window.onload)
+    // // ==================================================
+    // window.onload = function() {
+
+    //     const estado = window.opener.estadoSimulador;
+
+    //     const div = document.getElementById("infoVelocidad");
+
+    //     if (estado && estado.velAnimal) {
+    //         div.textContent = "Velocidad del animal: " 
+    //             + estado.velAnimal.toFixed(2) 
+    //             + " m/s";
+    //     } else {
+    //         div.textContent = "Velocidad no disponible";
+    //     }
+    //     actualizarPanel();
+    // };
+
+    // ==================================================
+    // INICIALIZACIÓN (window.onload)
+    // ==================================================
+    window.onload = function () {
+
+        calculoVelocidadRealSimulador();
+        actualizarEtiquetaVelocidad();
+
+        actualizarPanel();
+    };
 
 
-    function toggleSlow() {
-        factorVelocidad = (factorVelocidad === 1) ? 0.2 : 1;
+    function iniciarSimulacion() {
+
+        // Si ya estaba corriendo, no hacer nada
+        if (animando) return;
+
+        animalX = 0;
+        inicioTiempo = performance.now();
+
+        animando = true;
+
+        document.getElementById("btnInicio").textContent = "▶ CORRIENDO";
+        document.getElementById("btnInicio").disabled = true;
     }
 
-    function toggleCoords() {
-        mostrarCoords = !mostrarCoords;
+
+    // ==================================================
+    // IMÁGENES
+    // ==================================================
+
+    const jabali = new Image();
+    jabali.src = "jabali_alargado.png";
+    const fondo = new Image();
+    fondo.src = "fondo_2.png";
+    jabali.onload = () => console.log("Jabalí cargado");
+    jabali.onerror = () => console.log("ERROR cargando jabalí");
+
+    // ==================================================
+    // FUNCIONES DE DIBUJO
+    // ==================================================
+
+
+    function dibujarAnimal(centroZonaX, centroZonaY) {
+
+        const imagenX = centroZonaX - OFFSET_IMAGEN_X;
+        //const imagenY = centroZonaY - OFFSET_IMAGEN_Y;
+        const imagenY = centroZonaY - OFFSET_IMAGEN_Y + AJUSTE_SUELO;
+
+        ctx.drawImage(
+            jabali,
+            imagenX,
+            imagenY,
+            ANCHO_JABALI_PX,
+            ALTO_JABALI_PX
+    );
+
+    if (MODO_CALIBRACION) {
+
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(centroZonaX - 12, centroZonaY);
+        ctx.lineTo(centroZonaX + 12, centroZonaY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(centroZonaX, centroZonaY - 12);
+        ctx.lineTo(centroZonaX, centroZonaY + 12);
+        ctx.stroke();
     }
 
-    if (estadoImpacto === "delante") {
-    console.log("Se ejecuta esto");
-}
-
-// Desplazamiento de la cruz en móviles (para que el dedo no la tape)
-const offsetMovil = 80;
-
-// ===== MOVIMIENTO (ratón + dedo) =====
-canvas.addEventListener("pointermove", function(e) {
-
-    const rect = canvas.getBoundingClientRect();
-
-    crossX = e.clientX - rect.left;
-
-    if (e.pointerType === "touch") {
-        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
-    } else {
-        crossY = e.clientY - rect.top;
-    }
-
-});
 
 
-// ===== CONTROL DE DISPARO =====
+// ===== DEPURACIÓN =====
 
-let punterosActivos = new Set();
-
-
-// ===== POINTER DOWN =====
-canvas.addEventListener("pointerdown", function(e) {
-
-    const rect = canvas.getBoundingClientRect();
-
-    crossX = e.clientX - rect.left;
-
-    if (e.pointerType === "touch") {
-        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
-    } else {
-        crossY = e.clientY - rect.top;
-    }
-
-    punterosActivos.add(e.pointerId);
-
-    // PC
-    if (e.pointerType === "mouse") {
-
-        if (e.button === 0) {
-            disparar();
-        }
-
-        if (e.button === 2) {
-            corregirDisparo();
-        }
-    }
-
-    // Móvil
-    if (e.pointerType === "touch") {
-        e.preventDefault();
-    }
-
-});
-
-
-// ===== DISPARAR AL SOLTAR EN MÓVIL =====
-canvas.addEventListener("pointerup", function(e) {
-
-    punterosActivos.delete(e.pointerId);
-
-    if (e.pointerType === "touch") {
-        disparar();
-        e.preventDefault();
-    }
-});
-// ===== DOBLE CLICK PC =====
-canvas.addEventListener("dblclick", function() {
-    corregirDisparo();
-});
-
-
-// ===== EVITAR MENÚ DERECHO =====
-canvas.addEventListener("contextmenu", function(e) {
-    e.preventDefault();
-});
+ }
 
 
 
-function dibujarAnimal(x) {
-//======ancho y alto de la ventana ========
-// console.log(canvas.width)
-// console.log(canvas.height)
 
-const escala = 0.5;
 
-const y = lineaSuelo - 20 * escala;
 
-ctx.save();
-ctx.fillStyle = "#5a3e2b";
-ctx.strokeStyle = "#3e2a1d";
+// function dibujarVisor() {
+
+// ctx.strokeStyle = "black";
+// ctx.lineWidth = 1.5;
+
+// // Línea horizontal
+// ctx.beginPath();
+// ctx.moveTo(crossX - TAMANO_VISOR, crossY);
+// ctx.lineTo(crossX + TAMANO_VISOR, crossY);
+// ctx.stroke();
+
+// // Línea vertical
+// ctx.beginPath();
+// ctx.moveTo(crossX, crossY - TAMANO_VISOR);
+// ctx.lineTo(crossX, crossY + TAMANO_VISOR);
+// ctx.stroke();
+// }
+
+function dibujarVisor() {
+
+const TAM = 40;
+
+// Contorno negro
+ctx.strokeStyle = "black";
+ctx.lineWidth = 4;
+
+ctx.beginPath();
+ctx.moveTo(crossX - TAM, crossY);
+ctx.lineTo(crossX + TAM, crossY);
+ctx.moveTo(crossX, crossY - TAM);
+ctx.lineTo(crossX, crossY + TAM);
+ctx.stroke();
+
+// Cruz blanca
+ctx.strokeStyle = ayudaSeguimiento ? "#00FFFF" : "white";
 ctx.lineWidth = 2;
 
 ctx.beginPath();
-
-// ===== COLA =====
-ctx.moveTo(x - 90 * escala, y - 10 * escala);
-
-// ===== ESPALDA =====
-ctx.quadraticCurveTo(
-    x - 40 * escala, y - 45 * escala,
-    x + 40 * escala, y - 40 * escala
-);
-
-// ===== CUELLO =====
-ctx.quadraticCurveTo(
-    x + 80 * escala, y - 35 * escala,
-    x + 95 * escala, y - 10 * escala
-);
-
-// ===== HOCICO =====
-ctx.quadraticCurveTo(
-    x + 120 * escala, y - 5 * escala,
-    x + 105 * escala, y + 8 * escala
-);
-
-// ===== PECHO =====
-ctx.quadraticCurveTo(
-    x + 60 * escala, y + 15 * escala,
-    x + 30 * escala, y + 18 * escala
-);
-
-// ===== VIENTRE =====
-ctx.quadraticCurveTo(
-    x - 20 * escala, y + 20 * escala,
-    x - 70 * escala, y + 10 * escala
-);
-
-// ===== CIERRE HACIA COLA =====
-ctx.quadraticCurveTo(
-    x - 100 * escala, y + 5 * escala,
-    x - 90 * escala, y - 10 * escala
-);
-
-    // ==============================
-    // RABO
-    // ==============================
-
-    ctx.quadraticCurveTo(
-      x - 100 * escala, y + 5 * escala,
-      x - 100 * escala, y - 40 * escala
-    );
-
-
-ctx.closePath();
-ctx.fill();
+ctx.moveTo(crossX - TAM, crossY);
+ctx.lineTo(crossX + TAM, crossY);
+ctx.moveTo(crossX, crossY - TAM);
+ctx.lineTo(crossX, crossY + TAM);
 ctx.stroke();
-
-
-// =====================
-// OREJA
-// =====================
-ctx.beginPath();
-// ctx.moveTo(x + 60 * escala, y - 30 * escala);
-// ctx.lineTo(x + 75 * escala, y - 55 * escala);
-// ctx.lineTo(x + 85 * escala, y - 25 * escala);
-ctx.moveTo(x + 60 * escala, y - 25 * escala);
-ctx.lineTo(x + 75 * escala, y - 50 * escala);
-ctx.lineTo(x + 85 * escala, y - 20 * escala);
-
-ctx.closePath();
-ctx.fill();
-
-// =====================
-// PATAS
-// =====================
-ctx.fillRect(x - 50 * escala, y + 18 * escala, 12 * escala, 40 * escala);
-ctx.fillRect(x - 15 * escala, y + 18 * escala, 12 * escala, 40 * escala);
-ctx.fillRect(x + 20 * escala, y + 18 * escala, 12 * escala, 40 * escala);
-ctx.fillRect(x + 55 * escala, y + 18 * escala, 12 * escala, 40 * escala);
-
-// =====================
-// ZONA VITAL
-// =====================
-if (!jabaliAbatido) {
-    ctx.fillStyle = "rgba(255,0,0,0.6)";
-    ctx.beginPath();
-    // ctx.arc(
-    //     x + 40 * escala,
-    //     y - 5 * escala,
-    //     zonaVitalCm * escala,
-    //     0,
-    //     Math.PI * 2
-    // );
-    ctx.beginPath();
-ctx.ellipse(
-    x + 40 * escala,
-    y - 5 * escala,
-    zonaVitalCm * escala * 2,
-    zonaVitalCm * escala,
-    0,
-    0,
-    Math.PI * 2
-);
-ctx.stroke();
-    ctx.fill();
 }
 
 
-// =====================
-// COLMILLO
-// =====================
-ctx.beginPath();
-ctx.moveTo(x + 92 * escala, y - 10 * escala);
-ctx.lineTo(x + 103 * escala, y -4 * escala);
-ctx.lineTo(x + 96 * escala, y + 4 * escala);
-ctx.closePath();
-
-ctx.fillStyle = "#f5f0d8";
-ctx.fill();
-ctx.stroke();
-
-
-ctx.restore();
-}
-    // function cmToPixel(cm) {
-    // const escala = 3; // o el factor que estés usando
-    // return cm * escala;
-    // }
-    
-    function dibujarVisor() {
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 1.5;
-
-        ctx.beginPath();
-        ctx.moveTo(crossX - 15, crossY);
-        ctx.lineTo(crossX + 15, crossY);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(crossX, crossY - 15);
-        ctx.lineTo(crossX, crossY + 15);
-        ctx.stroke();
-    }
-
-    function dibujarFondo() {
-        let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        grad.addColorStop(0, "#87b5e0");
-        grad.addColorStop(1, "#dbeaf7");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "#4e7d3a";
-        ctx.fillRect(0, canvas.height * 0.65, canvas.width, canvas.height);
-
-        return canvas.height * 0.65;
-    }
-
-    function animarDisparo(timestamp) {
-
-        if (!inicioTiempo) inicioTiempo = timestamp;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (animando) {
-            let tiempo = ((timestamp - inicioTiempo) / 1000) * factorVelocidad;
-            animalX = tiempo * velocidadAnimalPx;
-        }
-
-
-        lineaSuelo = dibujarFondo();
-
-        // ======================
-        // ANIMACIÓN DE CAÍDA CORREGIDA
-        // ======================
-
-        if (cayendo && anguloCaida < Math.PI) {
-            anguloCaida += 0.05;   // un poco más rápido
-        }
-
-        // const centroX = animalX;
-        // const centroY = lineaSuelo - 20;
-        const escala = 0.5;
-
-        const centroX = animalX;
-        const centroY = lineaSuelo - (20 * escala);
-
+    function dibujarAnimalMuerto(centroZonaX) {
+        const y = lineaSuelo - CENTRO_ZONA_VITAL_Y;
         ctx.save();
-
-        ctx.translate(centroX, centroY);
-        ctx.rotate(anguloCaida);
-        ctx.translate(-centroX, -centroY);
-        //console.log("2254 animalX =", animalX)
-        dibujarAnimal(animalX);
-
-        // ===== Línea horizontal desde zona vital =====
-        const centroZonaX = animalX + 10; // mismo origen que usas para impacto
-        const centroZonaY = lineaSuelo - 20;
-
-        // ctx.strokeStyle = "rgba(0,0,0,0.25)";
-        // ctx.lineWidth = 1;
-        // ctx.beginPath();
-        // ctx.moveTo(centroZonaX, centroZonaY);
-        // ctx.lineTo(canvas.width, centroZonaY);
-        ctx.stroke();
-        ctx.restore();
-
-        // ===== Línea horizontal de escala =====
-        let centroZonY = lineaSuelo + 50;
-        ctx.save();
-        ctx.strokeStyle = "rgba(250,0,0,1)";
-        ctx.lineWidth = 1;
-
-        ctx.beginPath();
-        ctx.moveTo(0, centroZonY);              // ← empieza en el borde izquierdo
-        ctx.lineTo(canvas.width, centroZonY);   // ← termina en el derecho
-        ctx.stroke();
-        ctx.restore();
-
-        centroZonY = lineaSuelo + 50;
-
-        ctx.save();
-        ctx.strokeStyle = "rgba(250,0,0,1)";
-        ctx.lineWidth = 1;
-
-
-        // ===== Línea horizontal =====
-        ctx.beginPath();
-        ctx.moveTo(0, centroZonY);
-        ctx.lineTo(canvas.width, centroZonY);
-        ctx.stroke();
-
-        // ===== Líneas verticales cada longitudJabaliPx =====
-        longitudJabaliPx = 110;
-
-        for (let x = 0; x <= canvas.width; x += longitudJabaliPx) {        
-            ctx.beginPath();
-            ctx.moveTo(x, centroZonY - 100);  // tramo hacia arriba
-            ctx.lineTo(x, centroZonY + 10);  // pequeño tramo hacia abajo
-            ctx.stroke();
-            ctx.strokeStyle = "rgba(250,250,250,1)";
-        }
-
-        for (let x = 0; x <= canvas.width; x += longitudJabaliPx/2) {        
-            ctx.beginPath();
-            ctx.moveTo(x, centroZonY - 10);  // pequeño tramo hacia arriba
-            ctx.lineTo(x, centroZonY + 10);  // pequeño tramo hacia abajo
-            ctx.stroke();
-            ctx.strokeStyle = "rgba(250,250,250,1)";
-        }
-        ctx.restore();
-
-
-        // ===== Cota del tamaño del terreno =====
-const yCota = centroZonY + 25;      // 25 px debajo de la línea roja
-const altoMarca = 10;
-
-// Líneas de referencia en los extremos
-ctx.save();
-ctx.strokeStyle = "black";
-ctx.fillStyle = "black";
-ctx.lineWidth = 1;
-
-ctx.beginPath();
-
-// Extremo izquierdo
-ctx.moveTo(0, centroZonY);
-ctx.lineTo(0, yCota);
-
-// Extremo derecho
-ctx.moveTo(canvas.width, centroZonY);
-ctx.lineTo(canvas.width, yCota);
-
-// Línea de cota
-ctx.moveTo(0, yCota);
-ctx.lineTo(canvas.width, yCota);
-
-ctx.stroke();
-
-// Flecha izquierda
-ctx.beginPath();
-ctx.moveTo(0, yCota);
-ctx.lineTo(8, yCota - 4);
-ctx.lineTo(8, yCota + 4);
-ctx.closePath();
-ctx.fill();
-
-// Flecha derecha
-ctx.beginPath();
-ctx.moveTo(canvas.width, yCota);
-ctx.lineTo(canvas.width - 8, yCota - 4);
-ctx.lineTo(canvas.width - 8, yCota + 4);
-ctx.closePath();
-ctx.fill();
-
-// Texto
-ctx.font = "16px Arial";
-ctx.textAlign = "center";
-ctx.textBaseline = "bottom";
-ctx.fillText(
-    "Tamaño del terreno: " + anchoPantallaCm.toFixed(2) + " m",
-    canvas.width / 2,
-    yCota - 4
-);
-ctx.restore();
-
-
-        dibujarVisor();
-
-        if (mostrarCoords) {
-
-            const escala = 0.5 / 180;
-
-            const origenX = animalX + (10 * escala);
-            const origenY = lineaSuelo - (20 * escala);
-
-            const relX = crossX - origenX;
-            const relY = origenY - crossY;
-
-            ctx.fillStyle = "black";
-            ctx.font = "14px Arial";
-          //  ctx.fillText("Adelanto del disparo: " + Math.round(relX), crossX + 15, crossY - 10);
-            const cuerpos = relX / 90;
-
-            ctx.fillText(
-            "Adelanto del disparo: " + cuerpos.toFixed(2),
-            crossX + 35,
-            crossY - 10
-            );
-        
-            ctx.fillText("Altura: " + Math.round(relY), crossX + 35, crossY + 10);
-        }
-
-        if (balaX !== null && !jabaliAbatido) {
-            //ctx.fillStyle = "yellow";
-            ctx.fillStyle = "blue";
-            ctx.beginPath();
-            ctx.arc(balaX, balaY, 6, 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        // ✅ MENSAJES SI NO ES VITAL
-        // if (estadoImpacto === "delante") {
-        //     ctx.fillStyle = "black";
-        //     ctx.font = "bold 28px Arial";
-        //     ctx.textAlign = "center";
-        //     ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
-        // }
-
-        // if (estadoImpacto === "detras") {
-        //     ctx.fillStyle = "red";
-        //     ctx.font = "bold 28px Arial";
-        //     ctx.textAlign = "center";
-        //     ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
-        // }
-        ctx.textAlign = "center";
-ctx.font = "bold 28px Arial";
-
-switch (estadoImpacto) {
-    case "delante":
-        ctx.fillStyle = "black";
-        ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
-        break;
-
-    case "detras":
-        ctx.fillStyle = "red";
-        ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
-        break;
-
-    case "arriba":
-        ctx.fillStyle = "orange";
-        ctx.fillText("DISPARO ALTO", canvas.width / 2, 60);
-        break;
-
-    case "abajo":
-        ctx.fillStyle = "blue";
-        ctx.fillText("DISPARO BAJO", canvas.width / 2, 60);
-        break;
-
-    case "rozando":
-        ctx.fillStyle = "purple";
-        ctx.fillText("DISPARO MARGINAL", canvas.width / 2, 60);
-        break;
-}
-        requestAnimationFrame(animarDisparo);
-    }
-
-
-    function dibujarAnimalMuerto(x) {
-
-        const y = lineaSuelo - 20;
-
-        ctx.save();
-
         // Rotar 90 grados para simular caída
-        ctx.translate(x, y);
+        ctx.translate(centroZonaX, y);
         ctx.rotate(Math.PI / 2);
 
         // Dibujar el mismo cuerpo pero rotado
@@ -2428,130 +2227,190 @@ switch (estadoImpacto) {
         ctx.restore();
     }
 
-    function disparar() {
+        
+    function dibujarFondo() {
+    
+    ctx.drawImage(
+    fondo,
+    desplazamientoFondo,   // X dentro del PNG
+    0,                     // Y dentro del PNG
+    1536,                  // ancho visible
+    1024,                  // alto visible
+    0,                     // destino X
+    -20,                   // destino Y
+    canvas.width,          // ancho del canvas
+    canvas.height          // alto del canvas
+);
+return canvas.height * 0.65;
+    }
 
+
+    // ==================================================
+    // FUNCIONES DE CÁLCULO
+    // ==================================================
+
+    function calculoVelocidadRealSimulador(){
+        const configuracion = window.opener.configuracionEntrenamiento;
+        const pxPorMetro = LONGITUD_JABALI_PX / (LONGITUD_JABALI_CM / 100);
+        anchoPantallaCm=canvas.width/pxPorMetro;
+        velocidadAnimalPx = configuracion.velocidadAnimal * pxPorMetro;
+    }
+
+    // ==================================================
+    // DISPARO
+    // ==================================================
+    function disparar() {
         if (!animando) return;
 
         animando = false;
 
+        disparos++;
+        actualizarPanel();
         estadoImpacto = null; // reset
 
-       // balaX = crossX - adelantoCm;
-        balaX = crossX - adelantoCm + 20;
-
+        balaX = crossX - adelantoCm;
         balaY = crossY - caidaCm;
 
+        
         // =========================
         // CALCULAR ZONA VITAL
         // =========================
-        const escala = 0.5;
-        const relPxCm= longitudJabaliPx/longitudJabaliCm;
+        //const ESCALA = 0.5;
+        const relPxCm= LONGITUD_JABALI_PX/LONGITUD_JABALI_CM;
         // zona vital física REAL
         const vitalAncho = zonaVitalCm * relPxCm * 2;
         const vitalAlto  = zonaVitalCm * relPxCm;
 
         // centro visual
-        const vitalX = animalX + (10 * escala);
-        const vitalY = lineaSuelo - (20 * escala);
+        const vitalX = animalX;
+        const vitalY = lineaSuelo - DISTANCIA_ZONA_VITAL_SUELO;
+        const a = vitalAncho;
+        const b = a / 2;
 
-        const a = vitalAncho / 2;
-        const b = vitalAlto / 2;
-
-            console.log("animalX =", animalX)
-
-
-console.log("zonaVitalCm =",zonaVitalCm)
-console.log("vitalAncho = ", vitalAncho);
-console.log("vitalAlto = ", vitalAlto);
 
         const dx = balaX - vitalX;
         const dy = balaY - vitalY;
 
-    //     const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
-    //     console.log("balaY = ", balaY)
-    //     console.log("vitalY = ",vitalY)
+        const radioBala = 4;
 
-    //     if (dentro) {
-    //         estadoImpacto = "vital";
-    //         cayendo = true;
-    //         jabaliAbatido = true; 
-    //     } else if (balaX < vitalX - a) {
-    //         estadoImpacto = "detras";
-    //     } else {
-    //         estadoImpacto = "delante";
-    //     }     
-            
-    // }
-    const dentro = ((dx * dx) / (a * a) + (dy * dy) / (b * b)) <= 1;
+        const dentro =
+            ((dx * dx) / ((a + radioBala) * (a + radioBala)) +
+            (dy * dy) / ((b + radioBala) * (b + radioBala))) <= 1;
 
-    console.log("balaY =", balaY);
-    console.log("vitalY =", vitalY);
 
-    if (dentro) {
-        estadoImpacto = "vital";
-        cayendo = true;
-        jabaliAbatido = true;
+        if (dentro) {
+            estadoImpacto = "vital";
+            aciertos++;
+            actualizarPanel();
+            cayendo = true;
+            jabaliAbatido = true;
 
-    } else if (balaY < vitalY - b) {
-        estadoImpacto = "arriba";
+        } else if (balaY < vitalY - b) {
+            estadoImpacto = "arriba";
 
-    } else if (balaY > vitalY + b) {
-        estadoImpacto = "abajo";
+        } else if (balaY > vitalY + b) {
+            estadoImpacto = "abajo";
 
-    } else if (balaX < vitalX - a) {
-        estadoImpacto = "detras";
+        } else if (balaX < vitalX - a) {
+            estadoImpacto = "detras";
+            atrasos++;
+            actualizarPanel();
 
-    } else if (balaX > vitalX + a) {
-        estadoImpacto = "delante";
+        } else if (balaX > vitalX + a) {
+            estadoImpacto = "delante";
+            adelantos++;
+            actualizarPanel();
 
-    } else {
-        // Está fuera de la elipse, pero dentro del rectángulo que la contiene
-        // (una de las cuatro esquinas)
-        estadoImpacto = "rozando";
+        } else {
+            // Está fuera de la elipse, pero dentro del rectángulo que la contiene
+            // (una de las cuatro esquinas)
+            estadoImpacto = "rozando";
+        }
     }
-  }
-    console.log("estadoImpacto = ", estadoImpacto)
-    //----------------------------------
 
-    calculoVelocidadRealSimulador();
-    actualizarEtiquetaVelocidad();
+    // ==================================================
+    // UTILIDADES
+    // ==================================================
+    function ajustarCanvas() {
+        const rect = canvas.getBoundingClientRect();
 
-function calculoVelocidadRealSimulador(){
-  //  console.log("anchoPantalla =", canvas.width);
-  // console.log("altoPantalla =", canvas.height);
-    const estado = window.opener.estadoSimulador;
+        canvas.width = rect.width;
 
- //   console.log("Vel animal =", estado.velAnimal);
- //   console.log("longitudJabaliPx =",longitudJabaliPx);
- //   console.log("longitudJabaliCm =",longitudJabaliCm);
+        if (window.innerWidth < 768) {
+            canvas.height = 180;
+        } else {
+            canvas.height = 350;
+        }
+    }
 
-    const pxPorMetro = longitudJabaliPx / (longitudJabaliCm / 100);
-  //  console.log("pxPorMetro =", pxPorMetro);
-    anchoPantallaCm=canvas.width/pxPorMetro;
-  //  console.log("anchoPantallaCm = " , anchoPantallaCm)
+    window.addEventListener("resize", ajustarCanvas);
+    ajustarCanvas();
+
+    function toggleSlow() {
+        factorVelocidad = (factorVelocidad === 1) ? 0.2 : 1;
+    }
+
+    function togglePausa() {
+
+        if (!pausado) {
+
+            // Entramos en pausa
+            pausado = true;
+            instantePausa = performance.now();
+
+            document.getElementById("btnPausa").textContent =
+                "▶ Continuar";
+
+        } else {
+
+            // Reanudamos
+            pausado = false;
+
+            // Compensar el tiempo que hemos estado parados
+            inicioTiempo += performance.now() - instantePausa;
+
+            document.getElementById("btnPausa").textContent =
+                "⏸ Pausa";
+        }
+    }
+
+    function toggleSeguimiento() {
+        ayudaSeguimiento = !ayudaSeguimiento;
+
+        document.getElementById("btnSeguimiento").textContent =
+            ayudaSeguimiento
+            ? "🎯 Ayuda seguimiento: ON"
+            : "🎯 Ayuda seguimiento: OFF";
+    }
 
 
-velocidadAnimalPx = estado.velAnimal * pxPorMetro;
+    function toggleCoords() {
+        mostrarCoords = !mostrarCoords;
+    }
 
-//console.log("velocidadAnimalPx =", velocidadAnimalPx);
+    if (estadoImpacto === "delante") {
+    console.log("Se ejecuta esto");
+    }
 
-}
+    //=====================================================
+    // PANEL DE CONTROL
+    //=====================================================
+
     function actualizarEtiquetaVelocidad() {
 
-    const estado = window.opener.estadoSimulador;
+        const configuracion = window.opener.configuracionEntrenamiento;
 
-    if (!estado) return;
+        if (!configuracion) return;
 
-    const velReal = estado.velAnimal;
-    const velSimulada = velReal * factorVelocidad;
+        const velReal = configuracion.velocidadAnimal;
+        const velSimulada = velReal * factorVelocidad;
 
-    const div = document.getElementById("infoVelocidad");
+        const div = document.getElementById("infoVelocidad");
 
-
-div.innerHTML =
-"Velocidad real: " + velReal.toFixed(2) + " m/s &nbsp; | &nbsp; " +
-"Simulación: x" + factorVelocidad + " &nbsp; | &nbsp; " +
-"Velocidad pantalla: " + velSimulada.toFixed(2) + " m/s";
+        div.innerHTML =
+            "Velocidad real: " + velReal.toFixed(2) + " m/s &nbsp; | &nbsp; " +
+            "Factor: x" + factorVelocidad.toFixed(2) + " &nbsp; | &nbsp; " +
+            "Velocidad simulada: " + velSimulada.toFixed(2) + " m/s";
     }
 
     function corregirDisparo() {
@@ -2585,6 +2444,463 @@ div.innerHTML =
 
         actualizarEtiquetaVelocidad();   // 🔥 AQUÍ
     }
+
+    // ==================================================
+    // PANEL DE ENTRENAMIENTO
+    // ==================================================
+    function actualizarPanel() {
+
+        precision = (disparos === 0)
+            ? 0
+            : Math.round(aciertos * 100 / disparos);
+
+        document.getElementById("txtDisparos").textContent = disparos;
+        document.getElementById("txtAciertos").textContent = aciertos;
+        document.getElementById("txtAdelantos").textContent = adelantos;
+        document.getElementById("txtAtrasos").textContent = atrasos;
+        document.getElementById("txtPrecision").textContent = precision + "%";
+    }
+
+
+    // ==================================================
+    // EVENTOS (ratón, táctil, teclado...)
+    // ==================================================
+
+    // Desplazamiento de la cruz en móviles (para que el dedo no la tape)
+    const offsetMovil = 80;
+
+    // ===== MOVIMIENTO (ratón + dedo) =====
+    canvas.addEventListener("pointermove", function(e) {
+
+        const rect = canvas.getBoundingClientRect();
+
+        crossX = e.clientX - rect.left;
+
+        if (!ayudaSeguimiento) {
+    if (e.pointerType === "touch") {
+        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
+    } else {
+        crossY = e.clientY - rect.top;
+    }
+}
+
+        if (e.pointerType === "touch") {
+            crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
+        } else {
+            crossY = e.clientY - rect.top;
+        }
+
+    });
+
+
+// ===== CONTROL DE DISPARO =====
+
+let punterosActivos = new Set();
+
+
+// ===== POINTER DOWN =====
+canvas.addEventListener("pointerdown", function(e) {
+
+    const rect = canvas.getBoundingClientRect();
+
+    crossX = e.clientX - rect.left;
+
+    if (!ayudaSeguimiento) {
+    if (e.pointerType === "touch") {
+        crossY = Math.max(0, e.clientY - rect.top - offsetMovil);
+    } else {
+        crossY = e.clientY - rect.top;
+    }
+}
+
+
+
+    punterosActivos.add(e.pointerId);
+
+    // PC
+    if (e.pointerType === "mouse") {
+
+        if (e.button === 0) {
+            disparar();
+        }
+
+        if (e.button === 2) {
+            corregirDisparo();
+        }
+    }
+
+    // Móvil
+    if (e.pointerType === "touch") {
+        e.preventDefault();
+    }
+
+    });
+
+
+    // ===== DISPARAR AL SOLTAR EN MÓVIL =====
+    canvas.addEventListener("pointerup", function(e) {
+
+        punterosActivos.delete(e.pointerId);
+
+        if (e.pointerType === "touch") {
+            disparar();
+            e.preventDefault();
+        }
+    });
+    // ===== DOBLE CLICK PC =====
+    canvas.addEventListener("dblclick", function() {
+        corregirDisparo();
+    });
+
+
+    // ===== EVITAR MENÚ DERECHO =====
+    canvas.addEventListener("contextmenu", function(e) {
+        e.preventDefault();
+    });
+
+
+    // Ocultar ayuda si no es pantalla táctil
+    if (!('ontouchstart' in window)) {
+        const ayuda = document.getElementById("ayudaMovil");
+        if (ayuda) ayuda.style.display = "none";
+    }
+
+    const centroZonY = lineaSuelo + 280;
+
+
+
+function dibujarEscalaTerreno(centroZonY){
+
+
+        // ===== Línea horizontal de ESCALA =====
+        ctx.save();
+        ctx.strokeStyle = "rgba(250,0,0,1)";
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(0, centroZonY);              // ← empieza en el borde izquierdo
+        ctx.lineTo(canvas.width, centroZonY);   // ← termina en el derecho
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.strokeStyle = "rgba(250,0,0,1)";
+        ctx.lineWidth = 1;
+
+
+        // ===== Línea horizontal =====
+        ctx.beginPath();
+        ctx.moveTo(0, centroZonY);
+        ctx.lineTo(canvas.width, centroZonY);
+        ctx.stroke();
+
+        // ===== Líneas verticales cada LONGITUD_JABALI_PX =====
+        //longitudJabaliPx = 110;
+
+        for (let x = 0; x <= canvas.width; x += LONGITUD_JABALI_PX) {        
+            ctx.beginPath();
+            ctx.moveTo(x, centroZonY - 100);  // tramo hacia arriba
+            ctx.lineTo(x, centroZonY + 10);  // pequeño tramo hacia abajo
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(250,250,250,1)";
+        }
+
+        for (let x = 0; x <= canvas.width; x += LONGITUD_JABALI_PX/2) {        
+            ctx.beginPath();
+            ctx.moveTo(x, centroZonY - 10);  // pequeño tramo hacia arriba
+            ctx.lineTo(x, centroZonY + 10);  // pequeño tramo hacia abajo
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(250,250,250,1)";
+        }
+        //ctx.restore();
+
+        // ===== Cota del tamaño del terreno =====
+        const yCota = centroZonY + 35;      // 25 px debajo de la línea roja
+        const altoMarca = 10;
+
+        // Líneas de referencia en los extremos
+       // ctx.save();
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "black";
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+
+        // Extremo izquierdo
+        ctx.moveTo(0, centroZonY);
+        ctx.lineTo(0, yCota);
+
+        // Extremo derecho
+        ctx.moveTo(canvas.width, centroZonY);
+        ctx.lineTo(canvas.width, yCota);
+
+        // Línea de cota
+        ctx.moveTo(0, yCota);
+        ctx.lineTo(canvas.width, yCota);
+
+        ctx.stroke();
+
+        // Flecha izquierda
+        ctx.beginPath();
+        ctx.moveTo(0, yCota);
+        ctx.lineTo(8, yCota - 4);
+        ctx.lineTo(8, yCota + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Flecha derecha
+        ctx.beginPath();
+        ctx.moveTo(canvas.width, yCota);
+        ctx.lineTo(canvas.width - 8, yCota - 4);
+        ctx.lineTo(canvas.width - 8, yCota + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Texto
+        ctx.font = "16px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            "Tamaño del terreno: " + anchoPantallaCm.toFixed(2) + " m",
+            canvas.width / 2,
+            yCota - 4
+        );
+        //ctx.restore();
+}
+
+//-------------------------------
+
+function dibujarCoordenadas() {
+    if (!mostrarCoords) return;
+
+    // Centro de la zona vital (origen del simulador)
+    const centro = obtenerCentroZonaVital();
+
+    const centroX = centro.x;
+    const centroY = centro.y;
+
+
+
+    // Punto de referencia (solo para calibración)
+    // ctx.fillStyle = "yellow";
+    // ctx.beginPath();
+    // ctx.arc(centroX, centroY, 4, 0, Math.PI * 2);
+    // ctx.fill();
+
+    // Distancias respecto al centro de la zona vital
+    const adelantoPx = crossX - centroX;
+    const adelantoCm = adelantoPx / PIXELES_POR_CM;
+    const adelantoCuerpos = adelantoCm / LONGITUD_JABALI_CM;
+
+   const alturaCm = ((centroY - crossY) / PIXELES_POR_CM).toFixed(1);
+
+    // // Texto
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 3;
+
+    ctx.strokeText(
+        "Adelanto del disparo: " + adelantoCuerpos.toFixed(2),
+        crossX + 35,
+        crossY - 10
+    );
+    ctx.fillText(
+        "Adelanto del disparo: " + adelantoCuerpos.toFixed(2),
+        crossX + 35,
+        crossY - 10
+    );
+
+
+    ctx.strokeText(
+        "Altura: " + alturaCm,
+        crossX + 35,
+        crossY + 15
+    );
+
+
+    ctx.fillText(
+        "Altura: " + alturaCm,
+        crossX + 35,
+        crossY + 15
+    );
+
+    
+}
+
+
+function dibujarImpacto() {
+    if (balaX !== null && !jabaliAbatido) {
+            //ctx.fillStyle = "yellow";
+            ctx.fillStyle = "blue";
+            ctx.beginPath();
+            ctx.arc(balaX, balaY, 4, 0, Math.PI*2);
+            ctx.fill();
+        }
+}
+
+
+//--------------------------------
+function dibujarMensajesImpacto() {
+    switch (estadoImpacto) {
+        case "delante":
+            ctx.fillStyle = "black";
+            ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
+            break;
+
+        case "detras":
+            ctx.fillStyle = "red";
+            ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
+            break;
+
+        case "arriba":
+            ctx.fillStyle = "orange";
+            ctx.fillText("DISPARO ALTO", canvas.width / 2, 60);
+            break;
+
+        case "abajo":
+            ctx.fillStyle = "blue";
+            ctx.fillText("DISPARO BAJO", canvas.width / 2, 60);
+            break;
+
+        case "rozando":
+            ctx.fillStyle = "purple";
+            ctx.fillText("DISPARO MARGINAL", canvas.width / 2, 60);
+            break;
+    }
+}
+
+
+    // ==================================================
+    // MOTOR DE ANIMACIÓN
+    // ==================================================
+
+    function animarDisparo(timestamp) {
+
+
+        // =====================
+        // ACTUALIZAR TIEMPO
+        // =====================
+
+        if (!inicioTiempo) inicioTiempo = timestamp;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (animando && !pausado) {
+            const tiempo =
+            ((timestamp - inicioTiempo) / 1000) * factorVelocidad;
+
+        animalX = tiempo * velocidadAnimalPx;
+        }
+
+        // =====================
+        // DIBUJAR FONDO
+        // =====================
+
+        lineaSuelo = dibujarFondo();
+
+
+        // =====================
+        // CENTRO DE LA ZONA VITAL
+        // =====================
+
+        const centro = obtenerCentroZonaVital();
+        // ==========================
+    // AYUDA AL SEGUIMIENTO
+    // ==========================
+    if (ayudaSeguimiento) {
+
+        const centro = obtenerCentroZonaVital();
+
+        crossY = centro.y + caidaPx;
+
+    }
+
+
+        const centroX = centro.x;
+        const centroY = centro.y;
+        // =====================
+        // ANIMACIÓN DE CAÍDA
+        // =====================
+
+        if (cayendo && anguloCaida < Math.PI) {
+            anguloCaida += 0.05;
+        }
+
+        // =====================
+        // DIBUJAR JABALÍ
+        // =====================
+
+        ctx.save();
+
+        ctx.translate(centroX, centroY);
+        ctx.rotate(anguloCaida);
+        ctx.translate(-centroX, -centroY);
+
+        dibujarAnimal(centroX, centroY);
+
+        ctx.restore();
+
+        // =====================
+        // ESCALA DEL TERRENO
+        // =====================
+
+        dibujarEscalaTerreno(centroZonY);
+
+        // =====================
+        // LÍNEA DE ALTURA DEL DISPARO
+        // =====================
+
+        if (ayudaSeguimiento) {
+
+            ctx.save();
+
+            ctx.strokeStyle = "rgba(255,255,255,0.35)";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([8, 6]);
+
+            ctx.beginPath();
+            //ctx.moveTo(0, crossY);
+            ctx.moveTo(centroX - 180, crossY);
+            ctx.lineTo(centroX + 180, crossY);
+            ctx.lineTo(canvas.width, crossY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // =====================
+        // DIBUJAR VISOR
+        // =====================
+
+        dibujarVisor();
+
+        // =====================
+        // MOSTRAR COORDENADAS
+        // =====================
+
+        dibujarCoordenadas();
+
+        // =====================
+        // DIBUJAR IMPACTO
+        // =====================
+
+        dibujarImpacto();
+
+        // =====================
+        // MENSAJES DE IMPACTO
+        // =====================
+
+        ctx.textAlign = "center";
+        ctx.font = "bold 28px Arial";
+
+        dibujarMensajesImpacto();
+        requestAnimationFrame(animarDisparo);
+}
+
+    //----------------------------------
+
+    calculoVelocidadRealSimulador();
+    actualizarEtiquetaVelocidad();
     requestAnimationFrame(animarDisparo);
 
     <\/script>
@@ -2594,21 +2910,6 @@ div.innerHTML =
                 nuevaVentana.document.write(html);
                 nuevaVentana.document.close();
             }
-
-            // =====================
-            // ZONA VITAL GLOBAL
-            // =====================
-
-            function actualizarZonaVital() {
-                const valor = parseFloat(document.getElementById('zona').value);
-                zonaVitalCm = isNaN(valor) ? 4 : valor;
-            }
-
-            // Inicializar al cargar
-            actualizarZonaVital();
-
-            // Escuchar cambios del input
-            document.getElementById('zona').addEventListener('input', actualizarZonaVital);
         </script>
     </body>
 </html>
