@@ -1684,7 +1684,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '4.4';
+            const APP_VERSION = '4.6';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -1770,19 +1770,24 @@ button {
     background: linear-gradient(135deg, #4f8cff, #2f6fe0);
     color: white;
     border: none;
-    padding: 12px 22px;
-    font-size: 16px;
+
+    padding: 8px 18px;      /* antes 12px 22px */
+
+    font-size: 15px;        /* antes 16px */
+
     font-weight: bold;
     border-radius: 10px;
     cursor: pointer;
-    margin: 12px auto;
+
+    margin: 4px auto;       /* antes 12px */
+
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
-}
+    gap: 6px;               /* antes 8px */
 
+    box-shadow: 0 4px 10px rgba(0,0,0,.15);
+    transition: all .2s ease;
+}
 button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
@@ -1797,8 +1802,10 @@ button:active {
     display:flex;
     align-items:center;
     justify-content:flex-start;
-    gap:12px;
-    margin:5px 180px 5px 15px;
+    gap:8px;                     /* antes 12 */
+
+    margin:2px 180px 0px 15px;   /* antes 5px 180px 5px 15px */
+
     flex-wrap:nowrap;
 }
 
@@ -1935,7 +1942,7 @@ z-index: 1000;
 style="
 text-align:center;
 font-size:16px;
-margin:4px 0;
+margin:2px 0;
 line-height:1.2;
 ">
 </div>
@@ -1965,7 +1972,7 @@ line-height:1.2;
 <canvas id="canvas"></canvas>
 
 <div id="ayudaMovil" style="
-margin: 10px auto;
+margin: 0px auto;
 padding: 8px 12px;
 background: rgba(0,0,0,0.65);
 color: white;
@@ -2439,7 +2446,6 @@ return canvas.height * 0.65;
 
         div.innerHTML =
             "Velocidad real: " + velReal.toFixed(2) + " m/s &nbsp; | &nbsp; " +
-            "Factor: x" + factorVelocidad.toFixed(2) + " &nbsp; | &nbsp; " +
             "Velocidad simulada: " + velSimulada.toFixed(2) + " m/s";
     }
 
