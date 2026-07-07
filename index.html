@@ -1,4 +1,4 @@
-<!-- 6/07/2026 19:18 -->
+<!-- 7/07/2026 9:18 -->
 <!-- https://github.com/PacoDiezSa/calculadora-balistica -->
 <!doctype html>
 <html lang="es">
@@ -1684,7 +1684,7 @@
         </footer>
 
         <script>
-            const APP_VERSION = '4.6';
+            const APP_VERSION = '4.8';
             document.getElementById('versionApp').textContent = 'Versión ' + APP_VERSION;
         </script>
 
@@ -2131,7 +2131,7 @@ text-align: left;
 
 
     function iniciarSimulacion() {
-
+        estadoImpacto = null;
         // Si ya estaba corriendo, no hacer nada
         if (animando) return;
 
@@ -2453,6 +2453,8 @@ return canvas.height * 0.65;
         anguloCaida = 0;
         cayendo = false;
         jabaliAbatido = false;
+        let estadoImpacto = null;
+
         balaX = null;
         balaY = null;
 
@@ -2737,26 +2739,26 @@ function dibujarCoordenadas() {
 
     ctx.strokeText(
         "Adelanto del disparo: " + adelantoCuerpos.toFixed(2),
-        crossX + 35,
+        crossX + 105,
         crossY - 10
     );
     ctx.fillText(
         "Adelanto del disparo: " + adelantoCuerpos.toFixed(2),
-        crossX + 35,
+        crossX + 105,
         crossY - 10
     );
 
 
     ctx.strokeText(
         "Altura: " + alturaCm,
-        crossX + 35,
+        crossX + 105,
         crossY + 15
     );
 
 
     ctx.fillText(
         "Altura: " + alturaCm,
-        crossX + 35,
+        crossX + 105,
         crossY + 15
     );
 
@@ -2777,30 +2779,37 @@ function dibujarImpacto() {
 
 //--------------------------------
 function dibujarMensajesImpacto() {
+    if (!estadoImpacto) return;
+
+    const x = canvas.width / 2;
+    const y = canvas.height - 65;
+    ctx.font = "bold 26px Arial";
+    ctx.textAlign = "center";
     switch (estadoImpacto) {
         case "delante":
             ctx.fillStyle = "black";
-            ctx.fillText("DISPARO ADELANTADO", canvas.width / 2, 60);
+            ctx.fillText("DISPARO ADELANTADO", x, y);
             break;
 
         case "detras":
             ctx.fillStyle = "red";
-            ctx.fillText("DISPARO RETRASADO", canvas.width / 2, 60);
+            ctx.fillText("DISPARO RETRASADO", x, y);
             break;
 
         case "arriba":
             ctx.fillStyle = "orange";
-            ctx.fillText("DISPARO ALTO", canvas.width / 2, 60);
+            ctx.fillText("DISPARO ALTO", x, y);
             break;
 
         case "abajo":
             ctx.fillStyle = "blue";
-            ctx.fillText("DISPARO BAJO", canvas.width / 2, 60);
+            ctx.fillText("DISPARO BAJO", x, y);
             break;
 
         case "rozando":
             ctx.fillStyle = "purple";
-            ctx.fillText("DISPARO MARGINAL", canvas.width / 2, 60);
+            canvas.width / 2, 60
+            ctx.fillText("DISPARO MARGINAL", x, y);
             break;
     }
 }
